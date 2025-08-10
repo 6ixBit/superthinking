@@ -57,7 +57,70 @@ class ProfileScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // Hero gradient card
+          // Mascot and email
+          Column(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                backgroundImage: const AssetImage(
+                  'assets/superthinking_profile.png',
+                ),
+                onBackgroundImageError: (_, __) {},
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'user@example.com',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Next streak badge at the top
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Next streak badge',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Stay consistent for $target days'),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 12,
+                      color: AppColors.primary,
+                      backgroundColor: Colors.black12,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$streak of $target days',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Metrics grid
+          _metricsGrid(context, streak: streak, totalSessions: totalSessions),
+          const SizedBox(height: 16),
+
+          // Hero gradient card moved near the bottom
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -120,83 +183,27 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
 
-          // Metrics grid (responsive)
-          _metricsGrid(context, streak: streak, totalSessions: totalSessions),
-          const SizedBox(height: 16),
+          const SizedBox(height: 72),
 
-          // Progress toward next badge
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Next streak badge',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Stay consistent for $target days'),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 12,
-                      color: AppColors.primary,
-                      backgroundColor: Colors.black12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$streak of $target days',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+          // Logout button
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/home', (route) => false);
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.danger,
+              side: BorderSide(color: AppColors.danger, width: 1.2),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
+              textStyle: const TextStyle(fontWeight: FontWeight.w600),
             ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Motivational quote (influential person)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: AppColors.card,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 14,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Icon(CupertinoIcons.quote_bubble, color: Colors.black54),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'The mind is everything. What you think you become.',
-                        style: TextStyle(fontStyle: FontStyle.italic),
-                      ),
-                      SizedBox(height: 6),
-                      Text('— Buddha', style: TextStyle(color: Colors.black54)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            icon: const Icon(Icons.logout),
+            label: const Text('Log out'),
           ),
         ],
       ),
@@ -246,32 +253,37 @@ class ProfileScreen extends StatelessWidget {
     required String label,
   }) {
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  value,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                icon,
+              ],
+            ),
+            const SizedBox(height: 8),
             Text(
-              value,
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                icon,
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ],
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
         ),

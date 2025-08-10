@@ -32,6 +32,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pushReplacementNamed('/home'),
+            child: const Text('Skip'),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: Padding(

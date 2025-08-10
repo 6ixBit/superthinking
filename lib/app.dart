@@ -12,6 +12,7 @@ import 'screens/micro_victory_screen.dart';
 import 'screens/action_plan_screen.dart';
 import 'screens/next_session_nudge_screen.dart';
 import 'screens/home_shell.dart';
+import 'screens/login_screen.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -34,9 +35,10 @@ class SuperThinkingApp extends StatelessWidget {
       title: 'SuperThinking',
       theme: AppTheme.light(),
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',
+      initialRoute: '/login',
       routes: {
         '/': (_) => const WelcomeScreen(),
+        '/login': (_) => const LoginScreen(),
         '/quick': (_) => const QuickContextScreen(),
         '/record': (_) => const RecordSessionScreen(),
         '/loading': (_) => const LoadingRevealScreen(),

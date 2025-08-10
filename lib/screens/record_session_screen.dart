@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
+import 'dart:async';
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
@@ -23,11 +24,29 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   ];
   int promptIndex = 0;
 
+  Duration _recordElapsed = Duration.zero;
+  Timer? _recordTimer;
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
   Future<void> _startRecording() async {
     setState(() {
       isRecording = true;
       transcript = '';
       promptIndex = 0;
+      _recordElapsed = Duration.zero;
+    });
+
+    _recordTimer?.cancel();
+    _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !isRecording) return;
+      setState(() {
+        _recordElapsed += const Duration(seconds: 1);
+      });
     });
 
     for (int i = 0; i < prompts.length && isRecording; i++) {
@@ -42,10 +61,17 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
 
   void _stopRecording() {
     if (!isRecording) return;
+    _recordTimer?.cancel();
     setState(() => isRecording = false);
     context.read<AppState>().setTranscript('User thoughts... $transcript');
     context.read<AppState>().synthesizeMagic();
     Navigator.of(context).pushNamed('/loading');
+  }
+
+  @override
+  void dispose() {
+    _recordTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -64,10 +90,36 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        "What’s on your mind right now?",
-                        style: Theme.of(context).textTheme.headlineMedium,
-                        textAlign: TextAlign.center,
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'What’s on your mind',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.2,
+                                    letterSpacing: -0.2,
+                                    fontSize: 27,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'right now?',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.4,
+                                    fontSize: 30,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 28),
                       GestureDetector(
@@ -100,7 +152,21 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
+                      if (isRecording)
+                        Text(
+                          _formatDuration(_recordElapsed),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.black54),
+                        ),
+                      if (isRecording) const SizedBox(height: 4),
+                      if (isRecording)
+                        Text(
+                          'Tap to stop when you’re ready',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.black54),
+                        ),
+                      const SizedBox(height: 36),
                       if (isRecording)
                         _SpeechBubble(text: prompts[promptIndex]),
                     ],
@@ -110,17 +176,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
               ],
             ),
           ),
-          if (isRecording)
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Text(
-                  'Tap to stop when you’re ready',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ),
+          if (isRecording) const SizedBox.shrink(),
         ],
       ),
     );
@@ -143,7 +199,7 @@ class _SpeechBubble extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(CupertinoIcons.chat_bubble_text, size: 18),
+          const Icon(Icons.lightbulb_outline, size: 18, color: Colors.amber),
           const SizedBox(width: 8),
           Flexible(child: Text(text, textAlign: TextAlign.left)),
         ],
@@ -162,14 +218,21 @@ class OracleAura extends StatefulWidget {
 class _OracleAuraState extends State<OracleAura>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  late DateTime _start;
+  double _elapsedSec = 0;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 14),
-    )..repeat();
+    _start = DateTime.now();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..addListener(() {
+            final now = DateTime.now();
+            _elapsedSec = now.difference(_start).inMilliseconds / 1000.0;
+            setState(() {});
+          });
+    _controller.repeat();
   }
 
   @override
@@ -180,18 +243,13 @@ class _OracleAuraState extends State<OracleAura>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        return CustomPaint(painter: _AuroraPainter(time: _controller.value));
-      },
-    );
+    return CustomPaint(painter: _AuroraPainter(timeSec: _elapsedSec));
   }
 }
 
 class _AuroraPainter extends CustomPainter {
-  final double time;
-  _AuroraPainter({required this.time});
+  final double timeSec;
+  _AuroraPainter({required this.timeSec});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -200,22 +258,47 @@ class _AuroraPainter extends CustomPainter {
 
     canvas.saveLayer(Offset.zero & size, Paint());
 
+    // Subtle global rotation for more organic motion
+    canvas.translate(center.dx, center.dy);
+    final rot = 0.08 * math.sin(timeSec * 0.2);
+    canvas.rotate(rot);
+    canvas.translate(-center.dx, -center.dy);
+
+    // Warm orange palette
+    final palette = <Color>[
+      const Color(0xFFFFE7D1),
+      const Color(0xFFFFD7A8),
+      const Color(0xFFFFC180),
+      const Color(0xFFFFAD66),
+      const Color(0xFFFF994D),
+    ];
+
     void drawBlob({
-      required double phase,
-      required Color color,
-      required double radiusFactor,
+      required int idx,
+      required double basePhase,
+      required double baseRadius,
       required double dxAmp,
       required double dyAmp,
     }) {
-      final t = time * 2 * math.pi + phase;
-      final dx = math.sin(t) * dxAmp * size.width;
-      final dy = math.cos(t * 0.9) * dyAmp * size.height;
+      final color = palette[idx % palette.length];
+      final t = timeSec;
+      // Use incommensurate multipliers
+      final dx =
+          math.sin((t * (1.1 + 0.03 * idx)) + basePhase) * dxAmp * size.width;
+      final dy =
+          math.cos((t * (0.9 + 0.05 * idx)) + basePhase * 0.7) *
+          dyAmp *
+          size.height;
       final pos = center + Offset(dx, dy);
-      final r = shortest * radiusFactor;
+
+      final r =
+          shortest *
+          baseRadius *
+          (1.0 + 0.06 * math.sin(t * (0.7 + 0.02 * idx)));
 
       final rect = Rect.fromCircle(center: pos, radius: r);
       final gradient = RadialGradient(
-        colors: [color.withOpacity(0.55), color.withOpacity(0.0)],
+        colors: [color.withOpacity(0.45), color.withOpacity(0.0)],
       );
       final paint = Paint()
         ..shader = gradient.createShader(rect)
@@ -224,25 +307,39 @@ class _AuroraPainter extends CustomPainter {
     }
 
     drawBlob(
-      phase: 0.0,
-      color: AppColors.primary,
-      radiusFactor: 0.38,
-      dxAmp: 0.18,
+      idx: 0,
+      basePhase: 0.0,
+      baseRadius: 0.40,
+      dxAmp: 0.16,
+      dyAmp: 0.10,
+    );
+    drawBlob(
+      idx: 1,
+      basePhase: 1.9,
+      baseRadius: 0.34,
+      dxAmp: 0.14,
       dyAmp: 0.12,
     );
     drawBlob(
-      phase: 2.1,
-      color: AppColors.secondary,
-      radiusFactor: 0.32,
-      dxAmp: 0.16,
+      idx: 2,
+      basePhase: 3.7,
+      baseRadius: 0.30,
+      dxAmp: 0.12,
       dyAmp: 0.14,
     );
     drawBlob(
-      phase: 4.2,
-      color: AppColors.success,
-      radiusFactor: 0.28,
-      dxAmp: 0.12,
+      idx: 3,
+      basePhase: 5.3,
+      baseRadius: 0.28,
+      dxAmp: 0.10,
       dyAmp: 0.16,
+    );
+    drawBlob(
+      idx: 4,
+      basePhase: 0.8,
+      baseRadius: 0.26,
+      dxAmp: 0.09,
+      dyAmp: 0.11,
     );
 
     canvas.restore();
@@ -250,6 +347,6 @@ class _AuroraPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AuroraPainter oldDelegate) {
-    return oldDelegate.time != time;
+    return oldDelegate.timeSec != timeSec;
   }
 }
