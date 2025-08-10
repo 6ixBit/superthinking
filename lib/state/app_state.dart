@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../supabase/session_api.dart';
 
 class Session {
   final DateTime createdAt;
@@ -26,6 +27,7 @@ class AppState extends ChangeNotifier {
   final List<bool> actionCompletion = [false, false, false];
 
   final List<Session> sessions = [];
+  bool loadingSessions = false;
 
   void setChallenge(String value) {
     biggestChallenge = value;
@@ -74,5 +76,31 @@ class AppState extends ChangeNotifier {
   void toggleAction(int index) {
     actionCompletion[index] = !actionCompletion[index];
     notifyListeners();
+  }
+
+  Future<void> loadSessionsFromSupabase() async {
+    loadingSessions = true;
+    notifyListeners();
+    try {
+      final records = await SessionApi.fetchSessionsForCurrentUser();
+      sessions
+        ..clear()
+        ..addAll(
+          records.map(
+            (r) => Session(
+              createdAt: r.createdAt,
+              title: 'SuperThinking Session',
+              ideas: r.ideas,
+              actions: r.actions,
+              strength: '',
+            ),
+          ),
+        );
+    } catch (_) {
+      // ignore errors for now
+    } finally {
+      loadingSessions = false;
+      notifyListeners();
+    }
   }
 }

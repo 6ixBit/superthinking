@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
+import '../supabase/user_profile_api.dart';
 
 class OnboardingFrequencyScreen extends StatefulWidget {
   const OnboardingFrequencyScreen({super.key});
@@ -14,16 +15,16 @@ class OnboardingFrequencyScreen extends StatefulWidget {
 
 class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
   String? _selected;
-  final List<String> _options = const [
-    'Rarely',
-    'Sometimes',
-    'Often',
-    'All the time',
-  ];
+  final List<String> _options = const ['Rarely', 'Sometimes', 'Often'];
 
-  void _onContinue() {
+  void _onContinue() async {
     if (_selected == null) return;
     context.read<AppState>().addQuickAnswer(_selected!);
+    await UserProfileApi.setOnboardingResponse(
+      'overthinking_frequency',
+      _selected,
+    );
+    if (!mounted) return;
     Navigator.of(context).pushNamed('/onboarding-focus');
   }
 

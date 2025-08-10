@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
+import '../supabase/user_profile_api.dart';
 
 class OnboardingFocusScreen extends StatefulWidget {
   const OnboardingFocusScreen({super.key});
@@ -15,9 +16,11 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
   String? _selected;
   final List<String> _options = const ['Problems', 'Possibilities', 'Both'];
 
-  void _onContinue() {
+  void _onContinue() async {
     if (_selected == null) return;
     context.read<AppState>().addQuickAnswer(_selected!);
+    await UserProfileApi.setOnboardingResponse('overthinking_focus', _selected);
+    if (!mounted) return;
     Navigator.of(context).pushNamed('/overthinking-time');
   }
 

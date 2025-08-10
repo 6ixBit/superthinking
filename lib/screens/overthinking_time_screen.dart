@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
+import '../supabase/user_profile_api.dart';
 
 class OverthinkingTimeScreen extends StatefulWidget {
   const OverthinkingTimeScreen({super.key});
@@ -38,8 +39,10 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
 
     if (_selected != null) {
       context.read<AppState>().addQuickAnswer('Overthink time: $_selected');
+      await UserProfileApi.setPreferredPromptTime(_selected!);
     }
 
+    await UserProfileApi.markOnboardingCompleted();
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
   }
@@ -114,9 +117,13 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextButton(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil('/home', (route) => false),
+                onPressed: () async {
+                  await UserProfileApi.markOnboardingCompleted();
+                  if (!mounted) return;
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/home', (route) => false);
+                },
                 child: Text(
                   'Set up later',
                   style: Theme.of(

@@ -4,9 +4,14 @@ import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
 
-class SessionsScreen extends StatelessWidget {
+class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
 
+  @override
+  State<SessionsScreen> createState() => _SessionsScreenState();
+}
+
+class _SessionsScreenState extends State<SessionsScreen> {
   int _computeCurrentStreakDays(List<Session> sessions) {
     if (sessions.isEmpty) return 0;
     final days = sessions
@@ -22,6 +27,13 @@ class SessionsScreen extends StatelessWidget {
       day = day.subtract(const Duration(days: 1));
     }
     return streak;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Trigger initial load
+    Future.microtask(() => context.read<AppState>().loadSessionsFromSupabase());
   }
 
   @override
@@ -62,117 +74,127 @@ class SessionsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: sessions.isEmpty
+      body: app.loadingSessions
+          ? const Center(child: CircularProgressIndicator())
+          : sessions.isEmpty
           ? const Center(
               child: Text('No sessions yet. Start a SuperThinking session!'),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              itemCount: sessions.length,
-              itemBuilder: (context, i) {
-                final s = sessions[i];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 8,
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(s.title),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Best ideas'),
-                              const SizedBox(height: 6),
-                              ...s.ideas.map((e) => Text('- $e')),
-                              const SizedBox(height: 12),
-                              const Text('Actions'),
-                              const SizedBox(height: 6),
-                              ...s.actions.map((e) => Text('- $e')),
-                              const SizedBox(height: 12),
-                              Text('Strength: ${s.strength}'),
+          : RefreshIndicator(
+              onRefresh: () =>
+                  context.read<AppState>().loadSessionsFromSupabase(),
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                itemCount: sessions.length,
+                itemBuilder: (context, i) {
+                  final s = sessions[i];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 8,
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text(s.title),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Best ideas'),
+                                const SizedBox(height: 6),
+                                ...s.ideas.map((e) => Text('- $e')),
+                                const SizedBox(height: 12),
+                                const Text('Actions'),
+                                const SizedBox(height: 6),
+                                ...s.actions.map((e) => Text('- $e')),
+                                const SizedBox(height: 12),
+                                Text('Strength: ${s.strength}'),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Close'),
+                              ),
                             ],
                           ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Close'),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        s.title,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        fmt.format(s.createdAt),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(color: Colors.black54),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: Colors.black45,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                _StatPill(
+                                  icon: const Icon(
+                                    Icons.lightbulb_outline,
+                                    size: 16,
+                                  ),
+                                  label: 'Ideas',
+                                  value: s.ideas.length,
+                                ),
+                                const SizedBox(width: 8),
+                                _StatPill(
+                                  icon: const Icon(
+                                    Icons.check_circle_outline,
+                                    size: 16,
+                                  ),
+                                  label: 'Actions',
+                                  value: s.actions.length,
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      s.title,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      fmt.format(s.createdAt),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: Colors.black54),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(
-                                Icons.chevron_right_rounded,
-                                color: Colors.black45,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _StatPill(
-                                icon: const Icon(
-                                  Icons.lightbulb_outline,
-                                  size: 16,
-                                ),
-                                label: 'Ideas',
-                                value: s.ideas.length,
-                              ),
-                              const SizedBox(width: 8),
-                              _StatPill(
-                                icon: const Icon(
-                                  Icons.check_circle_outline,
-                                  size: 16,
-                                ),
-                                label: 'Actions',
-                                value: s.actions.length,
-                              ),
-                            ],
-                          ),
-                        ],
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
     );
   }
