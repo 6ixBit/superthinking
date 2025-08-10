@@ -34,7 +34,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     return Scaffold(
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 1, total: 3),
+        child: _OnboardingHeader(current: 1, total: 4),
       ),
       body: Stack(
         children: [

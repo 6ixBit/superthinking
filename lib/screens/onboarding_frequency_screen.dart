@@ -34,31 +34,35 @@ class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
         preferredSize: Size.fromHeight(56),
         child: _OnboardingHeader(current: 2, total: 4),
       ),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(20),
-        children: [
-          Text(
-            'How often do you overthink?',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: _options
-                .map(
-                  (o) => ChoiceChip(
-                    label: Text(o),
-                    selected: _selected == o,
-                    onSelected: (_) => setState(() => _selected = o),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'How often do you overthink?',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
+                    const SizedBox(height: 16),
+                    ..._options.map(
+                      (o) => _OptionButton(
+                        label: o,
+                        selected: _selected == o,
+                        onTap: () => setState(() => _selected = o),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -67,6 +71,54 @@ class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
           child: FilledButton(
             onPressed: _selected == null ? null : _onContinue,
             child: const Text('Continue'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OptionButton extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _OptionButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            side: BorderSide(
+              color: selected ? AppColors.primary : Colors.black26,
+            ),
+            foregroundColor: Colors.black,
+            backgroundColor: selected
+                ? AppColors.primary.withOpacity(0.08)
+                : null,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label),
+              if (selected)
+                const Icon(Icons.check_circle, color: AppColors.primary)
+              else
+                const Icon(Icons.circle_outlined, color: Colors.black26),
+            ],
           ),
         ),
       ),
