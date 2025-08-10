@@ -73,7 +73,7 @@ class _HomeShellState extends State<HomeShell> {
           .toList(growable: false),
       backgroundColor: Colors.transparent,
       indicatorColor: Colors.white.withOpacity(0.12),
-      height: 64,
+      height: 56,
       surfaceTintColor: Colors.transparent,
     );
 
@@ -89,13 +89,13 @@ class _HomeShellState extends State<HomeShell> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(28),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(32),
+                  borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.06),

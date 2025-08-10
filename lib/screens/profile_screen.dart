@@ -43,7 +43,17 @@ class ProfileScreen extends StatelessWidget {
     final progress = (streak / target).clamp(0.0, 1.0);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        centerTitle: false,
+        titleSpacing: 16,
+        title: Text(
+          'Profile',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+          ),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -92,7 +102,10 @@ class ProfileScreen extends StatelessWidget {
                       Text(
                         'Supercharging your brain',
                         style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 20,
+                            ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -244,7 +257,7 @@ class ProfileScreen extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Row(

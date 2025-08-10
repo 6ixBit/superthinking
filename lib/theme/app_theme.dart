@@ -53,6 +53,23 @@ class AppTheme {
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 17),
         ),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        iconTheme: MaterialStateProperty.resolveWith((states) {
+          final isSelected = states.contains(MaterialState.selected);
+          return IconThemeData(
+            color: isSelected ? AppColors.primary : Colors.black54,
+            size: 22,
+          );
+        }),
+        labelTextStyle: MaterialStateProperty.resolveWith((states) {
+          final isSelected = states.contains(MaterialState.selected);
+          return TextStyle(
+            color: isSelected ? AppColors.primary : Colors.black54,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 11,
+          );
+        }),
+      ),
     );
   }
 }
