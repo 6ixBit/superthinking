@@ -105,7 +105,7 @@ class QuickContextScreen extends StatelessWidget {
           const SizedBox(height: 12),
           FilledButton(
             onPressed: () {
-              Navigator.of(context).pushNamed('/record');
+              Navigator.of(context).pushNamed('/overthinking-time');
             },
             child: const Text('Start First Session'),
           ),
