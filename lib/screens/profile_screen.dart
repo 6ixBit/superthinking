@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
+import '../supabase/supabase_client.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -41,6 +43,8 @@ class ProfileScreen extends StatelessWidget {
     final totalSessions = sessions.length;
     final target = _nextStreakTarget(streak);
     final progress = (streak / target).clamp(0.0, 1.0);
+    final String userEmail =
+        SupabaseService.client.auth.currentUser?.email ?? 'user@example.com';
 
     return Scaffold(
       appBar: null,
@@ -63,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'user@example.com',
+                  userEmail,
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: Colors.black54),
@@ -175,10 +179,15 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 56),
             // Logout button
             OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil('/login', (route) => false);
+              onPressed: () async {
+                try {
+                  await SupabaseService.client.auth.signOut();
+                } catch (_) {}
+                if (context.mounted) {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/login', (route) => false);
+                }
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.danger,

@@ -1,14 +1,59 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 import '../theme/app_colors.dart';
+import '../supabase/supabase_client.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
-  void _continue(BuildContext context) {
-    Navigator.of(context).pushReplacementNamed('/');
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  StreamSubscription<sb.AuthState>? _sub;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = SupabaseService.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      if (!mounted) return;
+      if (event == sb.AuthChangeEvent.signedIn) {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _signInOAuth(sb.OAuthProvider provider) async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      final redirectTo = kIsWeb ? null : SupabaseConfig.redirectUri;
+      await SupabaseService.client.auth.signInWithOAuth(
+        provider,
+        redirectTo: redirectTo,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sign-in failed: $e')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -51,20 +96,35 @@ class LoginScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 40),
                     _SignInButton(
-                      onPressed: () => _continue(context),
+                      onPressed: _loading
+                          ? null
+                          : () => _signInOAuth(sb.OAuthProvider.apple),
                       background: Colors.black,
                       foreground: Colors.white,
                       icon: const Icon(Icons.apple, color: Colors.white),
-                      label: 'Continue with Apple',
+                      label: _loading ? 'Signing in…' : 'Continue with Apple',
                     ),
                     const SizedBox(height: 12),
                     _SignInButton(
-                      onPressed: () => _continue(context),
+                      onPressed: _loading
+                          ? null
+                          : () => _signInOAuth(sb.OAuthProvider.google),
                       background: Colors.white,
                       foreground: Colors.black,
                       borderColor: Colors.black.withOpacity(0.15),
                       icon: const Icon(Icons.g_mobiledata, size: 22),
-                      label: 'Continue with Google',
+                      label: _loading ? 'Signing in…' : 'Continue with Google',
+                    ),
+                    const SizedBox(height: 12),
+                    _SignInButton(
+                      onPressed: _loading
+                          ? null
+                          : () =>
+                                Navigator.of(context).pushReplacementNamed('/'),
+                      background: AppColors.primary,
+                      foreground: Colors.white,
+                      icon: const Icon(Icons.bolt, color: Colors.white),
+                      label: 'Super Login (skip)',
                     ),
                   ],
                 ),
@@ -78,7 +138,7 @@ class LoginScreen extends StatelessWidget {
 }
 
 class _SignInButton extends StatelessWidget {
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color background;
   final Color foreground;
   final Widget icon;
