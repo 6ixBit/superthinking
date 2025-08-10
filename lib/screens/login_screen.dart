@@ -24,6 +24,14 @@ class LoginScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Image.asset(
+                      'assets/superthinking_profile.png',
+                      width: 96,
+                      height: 96,
+                      fit: BoxFit.contain,
+                      errorBuilder: (c, e, s) => const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       'SuperThinking',
                       textAlign: TextAlign.center,
