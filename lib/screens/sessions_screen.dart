@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
+import '../supabase/user_profile_api.dart';
 
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
@@ -12,6 +13,7 @@ class SessionsScreen extends StatefulWidget {
 }
 
 class _SessionsScreenState extends State<SessionsScreen> {
+  int _profileStreak = 0;
   int _computeCurrentStreakDays(List<Session> sessions) {
     if (sessions.isEmpty) return 0;
     final days = sessions
@@ -34,17 +36,26 @@ class _SessionsScreenState extends State<SessionsScreen> {
     super.initState();
     // Trigger initial load
     Future.microtask(() => context.read<AppState>().loadSessionsFromSupabase());
+    Future.microtask(() async {
+      final profile = await UserProfileApi.ensureProfile();
+      if (!mounted) return;
+      setState(() {
+        _profileStreak = (profile?['streak_count'] as int?) ?? 0;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final sessions = app.sessions;
-    final streak = _computeCurrentStreakDays(sessions);
+    final computed = _computeCurrentStreakDays(sessions);
+    final streak = computed > 0 ? computed : _profileStreak;
 
     final fmt = DateFormat('EEE, MMM d • h:mm a');
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         centerTitle: false,
         titleSpacing: 16,
         title: Text(
@@ -55,22 +66,41 @@ class _SessionsScreenState extends State<SessionsScreen> {
           ),
         ),
         actions: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.local_fire_department_rounded,
-                color: Colors.orange,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '$streak',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(width: 12),
-            ],
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: Colors.orange,
+                  size: 26,
+                ),
+                Positioned(
+                  right: -6,
+                  top: -6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text(
+                      '$streak',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
