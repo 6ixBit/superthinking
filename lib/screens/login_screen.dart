@@ -2,8 +2,12 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple;
+import 'package:crypto/crypto.dart' as crypto;
+import 'dart:convert' show utf8;
 
 import '../theme/app_colors.dart';
 import '../supabase/supabase_client.dart';
@@ -18,17 +22,30 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   StreamSubscription<sb.AuthState>? _sub;
   bool _loading = false;
+  bool _navigated = false;
 
   @override
   void initState() {
     super.initState();
-    _sub = SupabaseService.client.auth.onAuthStateChange.listen((data) {
-      final event = data.event;
-      if (!mounted) return;
-      if (event == sb.AuthChangeEvent.signedIn) {
-        Navigator.of(context).pushReplacementNamed('/');
-      }
-    });
+    debugPrint('[Auth] LoginScreen initState');
+    _sub = SupabaseService.client.auth.onAuthStateChange.listen(
+      (data) {
+        final event = data.event;
+        debugPrint('[Auth] onAuthStateChange: $event');
+        if (!mounted || _navigated) return;
+        if (event == sb.AuthChangeEvent.signedIn) {
+          _navigated = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            debugPrint('[Auth] Navigating to /gate after sign-in');
+            Navigator.of(context).pushReplacementNamed('/gate');
+          });
+        }
+      },
+      onError: (e, st) {
+        debugPrint('[Auth] onAuthStateChange error: $e\n$st');
+      },
+    );
   }
 
   @override
@@ -42,11 +59,16 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
     try {
       final redirectTo = kIsWeb ? null : SupabaseConfig.redirectUri;
+      debugPrint(
+        '[Auth] signInWithOAuth provider=$provider redirectTo=$redirectTo',
+      );
       await SupabaseService.client.auth.signInWithOAuth(
         provider,
         redirectTo: redirectTo,
       );
-    } catch (e) {
+      debugPrint('[Auth] signInWithOAuth initiated');
+    } catch (e, st) {
+      debugPrint('[Auth][Error] signInWithOAuth: $e\n$st');
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -55,6 +77,65 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => _loading = false);
     }
   }
+
+  Future<void> _signInWithAppleNative() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      final rawNonce = SupabaseService.client.auth.generateRawNonce();
+      final hashedNonce = crypto.sha256
+          .convert(utf8.encode(rawNonce))
+          .toString();
+      debugPrint('[Auth] Apple native begin, nonce hashed=$hashedNonce');
+      final credential = await apple.SignInWithApple.getAppleIDCredential(
+        scopes: [
+          apple.AppleIDAuthorizationScopes.email,
+          apple.AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+      final idToken = credential.identityToken;
+      debugPrint(
+        '[Auth] Apple native credential received, idToken null? ${idToken == null}',
+      );
+      if (idToken == null) {
+        throw Exception('No Apple ID token');
+      }
+      await SupabaseService.client.auth.signInWithIdToken(
+        provider: sb.OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+      debugPrint('[Auth] Supabase signInWithIdToken succeeded');
+    } on apple.SignInWithAppleAuthorizationException catch (e, st) {
+      debugPrint(
+        '[Auth][Apple] AuthorizationException code=${e.code} message=${e.message}\n$st',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Apple sign-in failed: ${e.code.name}')),
+      );
+    } on sb.AuthException catch (e, st) {
+      debugPrint('[Auth][Supabase] AuthException: ${e.message}\n$st');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Auth error: ${e.message}')));
+    } catch (e, st) {
+      debugPrint('[Auth][Error] Apple native sign-in: $e\n$st');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Apple sign-in failed: $e')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  bool get _isApplePlatform =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +179,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     _SignInButton(
                       onPressed: _loading
                           ? null
-                          : () => _signInOAuth(sb.OAuthProvider.apple),
+                          : () async {
+                              debugPrint('[Auth] Apple button pressed');
+                              if (_isApplePlatform) {
+                                await _signInWithAppleNative();
+                              } else {
+                                await _signInOAuth(sb.OAuthProvider.apple);
+                              }
+                            },
                       background: Colors.black,
                       foreground: Colors.white,
                       icon: const Icon(Icons.apple, color: Colors.white),

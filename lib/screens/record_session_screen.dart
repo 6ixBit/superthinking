@@ -6,6 +6,7 @@ import 'dart:async';
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
+import '../supabase/session_repo.dart';
 
 class RecordSessionScreen extends StatefulWidget {
   const RecordSessionScreen({super.key});
@@ -26,6 +27,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
 
   Duration _recordElapsed = Duration.zero;
   Timer? _recordTimer;
+  final List<Map<String, dynamic>> _promptEvents = [];
 
   String _formatDuration(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -39,6 +41,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       transcript = '';
       promptIndex = 0;
       _recordElapsed = Duration.zero;
+      _promptEvents.clear();
     });
 
     _recordTimer?.cancel();
@@ -55,16 +58,28 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       setState(() {
         promptIndex = i;
         transcript += '\n[prompt] ${prompts[i]}';
+        _promptEvents.add({
+          'text': prompts[i],
+          'ts_seconds': _recordElapsed.inSeconds,
+        });
       });
     }
   }
 
-  void _stopRecording() {
+  Future<void> _stopRecording() async {
     if (!isRecording) return;
     _recordTimer?.cancel();
     setState(() => isRecording = false);
     context.read<AppState>().setTranscript('User thoughts... $transcript');
     context.read<AppState>().synthesizeMagic();
+    try {
+      final sessionId = await SessionRepo.createPendingSession(
+        durationSeconds: _recordElapsed.inSeconds,
+        promptsShown: List<Map<String, dynamic>>.from(_promptEvents),
+      );
+      // TODO: upload audio and call edge function
+    } catch (_) {}
+    if (!mounted) return;
     Navigator.of(context).pushNamed('/loading');
   }
 

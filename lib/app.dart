@@ -69,28 +69,36 @@ class _AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<_AuthGate> {
+  bool _navigated = false;
+
   @override
   void initState() {
     super.initState();
-    _route();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _route());
   }
 
   Future<void> _route() async {
-    // If no user, go to login
+    if (!mounted || _navigated) return;
     final user = SupabaseService.client.auth.currentUser;
     if (user == null) {
+      _navigated = true;
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/login');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      });
       return;
     }
-    // If user, check onboarding
     final completed = await UserProfileApi.isOnboardingCompleted();
-    if (!mounted) return;
-    if (completed) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/');
-    }
+    if (!mounted || _navigated) return;
+    _navigated = true;
+    final target = completed ? '/home' : '/';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(target);
+      }
+    });
   }
 
   @override
