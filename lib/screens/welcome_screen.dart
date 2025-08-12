@@ -77,10 +77,6 @@ class _OnboardingHeader extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
         child: Row(
           children: [
-            IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            ),
             Expanded(
               child: Center(
                 child: SizedBox(

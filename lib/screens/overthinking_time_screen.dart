@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
@@ -36,6 +37,10 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
         ],
       ),
     );
+
+    if (allow == true) {
+      await Permission.notification.request();
+    }
 
     if (_selected != null) {
       context.read<AppState>().addQuickAnswer('Overthink time: $_selected');
