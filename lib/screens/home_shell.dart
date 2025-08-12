@@ -13,12 +13,12 @@ class _NavItem {
   final String label;
   final Icon icon;
   final Icon selectedIcon;
-  final Widget page;
+  final Widget Function() builder;
   const _NavItem({
     required this.label,
     required this.icon,
     required this.selectedIcon,
-    required this.page,
+    required this.builder,
   });
 }
 
@@ -32,32 +32,41 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 1; // default to Record (middle)
   bool _appliedInitialIndex = false;
+  bool _deferEffects = true;
 
   late final List<_NavItem> _items;
+  late final List<Widget?> _pages;
 
   @override
   void initState() {
     super.initState();
-    _items = const [
+    _items = [
       _NavItem(
         label: 'Sessions',
         icon: Icon(CupertinoIcons.list_bullet),
         selectedIcon: Icon(CupertinoIcons.list_bullet_indent),
-        page: SessionsScreen(),
+        builder: () => const SessionsScreen(),
       ),
       _NavItem(
         label: 'SuperThink',
         icon: Icon(CupertinoIcons.mic),
         selectedIcon: Icon(CupertinoIcons.mic_fill),
-        page: RecordSessionScreen(),
+        builder: () => const RecordSessionScreen(),
       ),
       _NavItem(
         label: 'Profile',
         icon: Icon(CupertinoIcons.person),
         selectedIcon: Icon(CupertinoIcons.person_fill),
-        page: ProfileScreen(),
+        builder: () => const ProfileScreen(),
       ),
     ];
+    _pages = List<Widget?>.filled(_items.length, null, growable: false);
+
+    // Avoid heavy blur on first frame to prevent jank, enable right after
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _deferEffects = false);
+    });
   }
 
   @override
@@ -73,12 +82,17 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Ensure current page is built (lazily)
+    _pages[_index] ??= _items[_index].builder();
+
     final navBar = NavigationBar(
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() {
         // Always clear any open session when interacting with the nav
         context.read<AppState>().setOpenSession(null);
         _index = i;
+        // lazily build next page when selected
+        _pages[_index] ??= _items[_index].builder();
       }),
       destinations: _items
           .map(
@@ -99,7 +113,11 @@ class _HomeShellState extends State<HomeShell> {
       extendBody: true,
       body: IndexedStack(
         index: _index,
-        children: _items.map((e) => e.page).toList(growable: false),
+        children: List<Widget>.generate(
+          _items.length,
+          (i) => _pages[i] ?? const SizedBox.shrink(),
+          growable: false,
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -108,27 +126,46 @@ class _HomeShellState extends State<HomeShell> {
           constraints: const BoxConstraints(maxWidth: 560),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(28),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
+            child: _deferEffects
+                ? Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.12),
+                        width: 1,
+                      ),
                     ),
-                  ],
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.25),
-                    width: 1,
+                    child: navBar,
+                  )
+                : BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.25),
+                          width: 1,
+                        ),
+                      ),
+                      child: navBar,
+                    ),
                   ),
-                ),
-                child: navBar,
-              ),
-            ),
           ),
         ),
       ),

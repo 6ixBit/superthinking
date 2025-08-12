@@ -326,6 +326,20 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () {
+            final app = context.read<AppState>();
+            if (app.openSessionId != null) {
+              app.setOpenSession(null);
+              return;
+            }
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
+          tooltip: 'Close',
+        ),
         title: const Text('Session'),
       ),
       body: _loading

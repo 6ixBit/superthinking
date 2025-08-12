@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
 import '../../supabase/user_profile_api.dart';
+import '../home_shell.dart';
 
 class OverthinkingTimeScreen extends StatefulWidget {
   const OverthinkingTimeScreen({super.key});
@@ -19,15 +20,37 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
 
   Future<void> _continue() async {
     await Permission.notification.request();
-
-    if (_selected != null) {
-      context.read<AppState>().addQuickAnswer('Overthink time: $_selected');
-      await UserProfileApi.setPreferredPromptTime(_selected!);
+    // Apply local state immediately (fast)
+    final chosen = _selected;
+    if (chosen != null) {
+      context.read<AppState>().addQuickAnswer('Overthink time: $chosen');
     }
 
-    await UserProfileApi.markOnboardingCompleted();
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+    // Navigate immediately with a lightweight fade and clear the stack
+    Navigator.of(context).pushAndRemoveUntil(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const HomeShell(),
+        transitionDuration: const Duration(milliseconds: 160),
+        reverseTransitionDuration: const Duration(milliseconds: 160),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+      (route) => false,
+    );
+
+    // Run Supabase updates in background to avoid blocking the transition
+    Future.microtask(() async {
+      try {
+        if (chosen != null) {
+          await UserProfileApi.setPreferredPromptTime(chosen);
+        }
+        await UserProfileApi.markOnboardingCompleted();
+      } catch (_) {
+        // ignore
+      }
+    });
   }
 
   @override
@@ -101,11 +124,27 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
             children: [
               TextButton(
                 onPressed: () async {
-                  await UserProfileApi.markOnboardingCompleted();
                   if (!mounted) return;
-                  Navigator.of(
-                    context,
-                  ).pushNamedAndRemoveUntil('/home', (route) => false);
+                  // Navigate immediately with a lightweight fade
+                  Navigator.of(context).pushAndRemoveUntil(
+                    PageRouteBuilder(
+                      pageBuilder: (_, __, ___) => const HomeShell(),
+                      transitionDuration: const Duration(milliseconds: 160),
+                      reverseTransitionDuration: const Duration(
+                        milliseconds: 160,
+                      ),
+                      transitionsBuilder: (_, animation, __, child) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                    ),
+                    (route) => false,
+                  );
+                  // Mark completion in background
+                  Future.microtask(() async {
+                    try {
+                      await UserProfileApi.markOnboardingCompleted();
+                    } catch (_) {}
+                  });
                 },
                 child: Text(
                   'Set up later',

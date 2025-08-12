@@ -3,11 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'dart:io';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
 import '../supabase/session_repo.dart';
+import '../services/storage.dart';
+import '../supabase/supabase_client.dart';
+
+// Helper for unawaited
+void unawaited(Future<void> future) {
+  // ignore: unawaited_futures
+  future;
+}
 
 class RecordSessionScreen extends StatefulWidget {
   const RecordSessionScreen({super.key});
@@ -27,6 +39,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   int promptIndex = 0;
 
   late final stt.SpeechToText _speech;
+  final AudioRecorder _recorder = AudioRecorder();
 
   Duration _recordElapsed = Duration.zero;
   Timer? _recordTimer;
@@ -45,6 +58,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   }
 
   Future<void> _startRecording() async {
+    print('[RecordSession] Starting recording...');
     setState(() {
       isRecording = true;
       _recordElapsed = Duration.zero;
@@ -58,11 +72,37 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       });
     });
 
+    // Start file recording
+    print('[RecordSession] Checking microphone permission...');
+    final hasPerm = await _recorder.hasPermission();
+    print('[RecordSession] Has permission: $hasPerm');
+    if (hasPerm) {
+      final dir = await getTemporaryDirectory();
+      final path = p.join(
+        dir.path,
+        'session_${DateTime.now().millisecondsSinceEpoch}.m4a',
+      );
+      print('[RecordSession] Starting file recording to: $path');
+      await _recorder.start(
+        const RecordConfig(encoder: AudioEncoder.aacLc),
+        path: path,
+      );
+      print('[RecordSession] File recording started successfully');
+    } else {
+      print('[RecordSession] WARNING: No microphone permission!');
+    }
+
     // Initialize speech recognition
+    print('[RecordSession] Initializing speech recognition...');
     final available = await _speech.initialize(
-      onStatus: (s) {},
-      onError: (e) {},
+      onStatus: (s) {
+        print('[RecordSession] Speech status: $s');
+      },
+      onError: (e) {
+        print('[RecordSession] Speech error: $e');
+      },
     );
+    print('[RecordSession] Speech available: $available');
     if (available) {
       await _speech.listen(
         onResult: (r) {
@@ -72,16 +112,22 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
               // Always update with the latest recognized words
               // speech_to_text accumulates words automatically
               transcript = words;
+              print(
+                '[RecordSession] Transcript updated: "${words.substring(0, math.min(50, words.length))}..."',
+              );
             }
           });
         },
-        listenMode: stt.ListenMode.dictation,
-        pauseFor: const Duration(seconds: 2),
-        partialResults: true,
-        listenFor: const Duration(minutes: 10),
+        listenOptions: stt.SpeechListenOptions(
+          listenMode: stt.ListenMode.dictation,
+          partialResults: true,
+          cancelOnError: false,
+        ),
+        pauseFor: const Duration(minutes: 30),
+        listenFor: const Duration(hours: 1),
         localeId: null,
-        cancelOnError: true,
       );
+      print('[RecordSession] Speech listening started');
     }
 
     for (int i = 0; i < prompts.length && isRecording; i++) {
@@ -94,33 +140,91 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
           'ts_seconds': _recordElapsed.inSeconds,
         });
       });
+      print('[RecordSession] Showing prompt $i: ${prompts[i]}');
     }
   }
 
   Future<void> _stopRecording() async {
     if (!isRecording) return;
+    print('[RecordSession] Stopping recording...');
     _recordTimer?.cancel();
     setState(() => isRecording = false);
 
     if (_speech.isListening) {
+      print('[RecordSession] Stopping speech recognition...');
       await _speech.stop();
+    }
+
+    // Stop file recording and upload
+    String? audioFilePath;
+    if (await _recorder.isRecording()) {
+      print('[RecordSession] Stopping file recording...');
+      audioFilePath = await _recorder.stop();
+      print('[RecordSession] File recording stopped. Path: $audioFilePath');
+    } else {
+      print(
+        '[RecordSession] WARNING: Recorder was not recording when we tried to stop',
+      );
     }
 
     context.read<AppState>().setTranscript(transcript);
     context.read<AppState>().synthesizeMagic();
     try {
+      print('[RecordSession] Creating pending session...');
       final sessionId = await SessionRepo.createPendingSession(
         durationSeconds: _recordElapsed.inSeconds,
         promptsShown: List<Map<String, dynamic>>.from(_promptEvents),
       );
+      print('[RecordSession] Session created with ID: $sessionId');
       if (!mounted) return;
       context.read<AppState>().setSessionTranscript(sessionId, transcript);
       context.read<AppState>().setOpenSession(sessionId);
+
+      // Upload and trigger processing in background
+      if (audioFilePath != null) {
+        print(
+          '[RecordSession] Starting background upload for audio file: $audioFilePath',
+        );
+        unawaited(() async {
+          try {
+            print('[RecordSession] Getting current user...');
+            final user = SupabaseService.client.auth.currentUser;
+            if (user == null) {
+              print('[RecordSession] ERROR: No authenticated user found!');
+              return;
+            }
+            print('[RecordSession] User ID: ${user.id}');
+
+            print('[RecordSession] Uploading audio file...');
+            final url = await StorageService.uploadAudioFile(
+              file: File(audioFilePath!),
+              userId: user.id,
+              sessionId: sessionId,
+            );
+            print('[RecordSession] Upload successful. URL: $url');
+
+            print('[RecordSession] Attaching audio and starting processing...');
+            await SessionRepo.attachAudioAndStartProcessing(
+              sessionId: sessionId,
+              audioUrl: url,
+            );
+            print('[RecordSession] Processing started successfully');
+          } catch (e, stackTrace) {
+            print('[RecordSession] ERROR in background upload: $e');
+            print('[RecordSession] Stack trace: $stackTrace');
+          }
+        }());
+      } else {
+        print('[RecordSession] WARNING: No audio file path to upload');
+      }
       Navigator.of(
         context,
       ).pushNamedAndRemoveUntil('/home', (r) => false, arguments: 0);
       return;
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      print('[RecordSession] ERROR creating session: $e');
+      print('[RecordSession] Stack trace: $stackTrace');
+    }
     if (!mounted) return;
     Navigator.of(context).pushNamed('/home');
   }
