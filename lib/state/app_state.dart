@@ -111,9 +111,13 @@ class AppState extends ChangeNotifier {
             (r) => Session(
               id: r.id,
               createdAt: r.createdAt,
-              title: 'SuperThinking Session',
+              title:
+                  r.title ??
+                  'Thinking Session', // Use AI-generated title or fallback
               ideas: r.ideas,
-              actions: r.actions,
+              actions: r.actions
+                  .map((action) => action.description)
+                  .toList(), // Convert ActionItem to String
               strength: '',
               durationSeconds: r.durationSeconds,
             ),

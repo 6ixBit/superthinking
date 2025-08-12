@@ -231,7 +231,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            s.title,
+                                            fmt.format(s.createdAt),
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .titleMedium
@@ -241,7 +241,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            fmt.format(s.createdAt),
+                                            s.title,
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall

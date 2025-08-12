@@ -7,7 +7,12 @@ class SessionRecord {
   final DateTime createdAt;
   final int? durationSeconds;
   final List<String> ideas;
-  final List<String> actions;
+  final List<ActionItem> actions;
+  final String? transcript;
+  final String?
+  processingStatus; // 'pending', 'processing', 'completed', 'failed'
+  final SessionAnalysis? analysis;
+  final String? title; // AI-generated session title
 
   SessionRecord({
     required this.id,
@@ -15,6 +20,58 @@ class SessionRecord {
     required this.durationSeconds,
     required this.ideas,
     required this.actions,
+    this.transcript,
+    this.processingStatus,
+    this.analysis,
+    this.title,
+  });
+}
+
+class ActionItem {
+  final String id;
+  final String description;
+  final String? category;
+  final String priority; // 'low', 'medium', 'high'
+  final String source; // 'user_stated', 'ai_suggested'
+  final String status; // 'pending', 'completed'
+
+  ActionItem({
+    required this.id,
+    required this.description,
+    this.category,
+    required this.priority,
+    required this.source,
+    required this.status,
+  });
+}
+
+class SessionAnalysis {
+  final String summaryBefore;
+  final String summaryAfter;
+  final int problemFocusPercentage;
+  final int solutionFocusPercentage;
+  final int shiftPercentage;
+  final String thinkingStyleToday;
+  final Map<String, int> thinkingPatterns;
+  final List<String> bestIdeas;
+  final String strengthHighlight;
+  final List<String> positiveQuotes;
+  final List<String> resourcesMentioned;
+  final int sessionDurationMinutes;
+
+  SessionAnalysis({
+    required this.summaryBefore,
+    required this.summaryAfter,
+    required this.problemFocusPercentage,
+    required this.solutionFocusPercentage,
+    required this.shiftPercentage,
+    required this.thinkingStyleToday,
+    required this.thinkingPatterns,
+    required this.bestIdeas,
+    required this.strengthHighlight,
+    required this.positiveQuotes,
+    required this.resourcesMentioned,
+    required this.sessionDurationMinutes,
   });
 }
 
@@ -27,7 +84,7 @@ class SessionApi {
 
     final sessionsRes = await client
         .from('sessions')
-        .select('id, created_at, duration_seconds')
+        .select('id, created_at, duration_seconds, processing_status, title')
         .eq('user_id', user.id)
         .order('created_at', ascending: false);
 
@@ -83,58 +140,118 @@ class SessionApi {
       final id = r['id'] as String;
       final createdAt = DateTime.parse(r['created_at'] as String);
       final duration = r['duration_seconds'] as int?;
+      final processingStatus = r['processing_status'] as String?;
+      final title = r['title'] as String?;
+
+      // Convert string actions to ActionItem objects for display
+      final actionStrings = sessionIdToActions[id] ?? const <String>[];
+      final actionItems = actionStrings
+          .map(
+            (desc) => ActionItem(
+              id: '', // We don't need the ID for the summary view
+              description: desc,
+              priority: 'medium',
+              source: 'ai_suggested',
+              status: 'pending',
+            ),
+          )
+          .toList();
+
       return SessionRecord(
         id: id,
         createdAt: createdAt,
         durationSeconds: duration,
         ideas: sessionIdToIdeas[id] ?? const <String>[],
-        actions: sessionIdToActions[id] ?? const <String>[],
+        actions: actionItems,
+        processingStatus: processingStatus,
+        title: title,
       );
     }).toList();
   }
 
   static Future<SessionRecord?> fetchSessionById(String sessionId) async {
     final client = SupabaseService.client;
-    final row = await client
+
+    // Fetch session basic info
+    final sessionRow = await client
         .from('sessions')
-        .select('id, created_at, duration_seconds')
+        .select(
+          'id, created_at, duration_seconds, raw_transcript, processing_status, title',
+        )
         .eq('id', sessionId)
         .maybeSingle();
-    if (row == null) return null;
+    if (sessionRow == null) return null;
 
-    final ideasRows = await client
+    // Fetch analysis data
+    final analysisRow = await client
         .from('session_analysis')
-        .select('best_ideas')
-        .eq('session_id', sessionId);
-    final actionsRows = await client
+        .select('*')
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+    // Fetch action items
+    final actionRows = await client
         .from('action_items')
-        .select('description')
+        .select('id, description, category, priority, source, status')
         .eq('session_id', sessionId);
 
-    final ideas = <String>[];
-    if (ideasRows is List && ideasRows.isNotEmpty) {
-      final list = ideasRows.first['best_ideas'];
-      if (list is List) {
-        for (final v in list) {
-          if (v is String) ideas.add(v);
-        }
+    final actions = <ActionItem>[];
+    if (actionRows is List) {
+      for (final r in actionRows) {
+        actions.add(
+          ActionItem(
+            id: r['id'] as String,
+            description: r['description'] as String,
+            category: r['category'] as String?,
+            priority: r['priority'] as String? ?? 'medium',
+            source: r['source'] as String? ?? 'ai_suggested',
+            status: r['status'] as String? ?? 'pending',
+          ),
+        );
       }
     }
 
-    final actions = <String>[];
-    if (actionsRows is List) {
-      for (final r in actionsRows) {
-        final desc = r['description'] as String?;
-        if (desc != null) actions.add(desc);
-      }
+    // Parse analysis if available
+    SessionAnalysis? analysis;
+    if (analysisRow != null) {
+      analysis = SessionAnalysis(
+        summaryBefore: analysisRow['summary_before'] as String? ?? '',
+        summaryAfter: analysisRow['summary_after'] as String? ?? '',
+        problemFocusPercentage:
+            analysisRow['problem_focus_percentage'] as int? ?? 0,
+        solutionFocusPercentage:
+            analysisRow['solution_focus_percentage'] as int? ?? 0,
+        shiftPercentage: analysisRow['shift_percentage'] as int? ?? 0,
+        thinkingStyleToday:
+            analysisRow['thinking_style_today'] as String? ?? '',
+        thinkingPatterns: Map<String, int>.from(
+          analysisRow['thinking_patterns'] as Map<String, dynamic>? ?? {},
+        ),
+        bestIdeas: List<String>.from(
+          analysisRow['best_ideas'] as List<dynamic>? ?? [],
+        ),
+        strengthHighlight: analysisRow['strength_highlight'] as String? ?? '',
+        positiveQuotes: List<String>.from(
+          analysisRow['positive_quotes'] as List<dynamic>? ?? [],
+        ),
+        resourcesMentioned: List<String>.from(
+          analysisRow['resources_mentioned'] as List<dynamic>? ?? [],
+        ),
+        sessionDurationMinutes:
+            analysisRow['session_duration_minutes'] as int? ?? 0,
+      );
     }
 
     return SessionRecord(
-      id: row['id'] as String,
-      createdAt: DateTime.parse(row['created_at'] as String),
-      durationSeconds: row['duration_seconds'] as int?,
-      ideas: ideas,
+      id: sessionRow['id'] as String,
+      createdAt: DateTime.parse(sessionRow['created_at'] as String),
+      durationSeconds: sessionRow['duration_seconds'] as int?,
+      transcript: sessionRow['raw_transcript'] as String?,
+      processingStatus: sessionRow['processing_status'] as String?,
+      ideas: analysis?.bestIdeas ?? [],
       actions: actions,
+      analysis: analysis,
+      title: sessionRow['title'] as String?,
     );
   }
 

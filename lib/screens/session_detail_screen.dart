@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import 'package:confetti/confetti.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 class SessionDetailScreen extends StatefulWidget {
   final String sessionId;
@@ -29,8 +30,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     duration: const Duration(milliseconds: 800),
   );
   final Set<int> _completed = <int>{};
-  List<String> _nextSteps = const [];
   bool _transcriptExpanded = false;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   @override
   void dispose() {
     _confetti.dispose();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -50,13 +52,35 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     setState(() {
       _record = rec;
       _loading = false;
-      _nextSteps = (rec != null && rec.actions.isNotEmpty)
-          ? List<String>.from(rec.actions)
-          : <String>[
-              'Text Sarah for presentation feedback',
-              'Draft a 1-page outline',
-              'Schedule a 20‑min practice run',
-            ];
+    });
+
+    // If session is still processing, set up periodic refresh
+    if (rec != null &&
+        (rec.processingStatus == 'processing' ||
+            rec.processingStatus == 'pending')) {
+      _startPeriodicRefresh();
+    }
+  }
+
+  void _startPeriodicRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      final rec = await SessionApi.fetchSessionById(widget.sessionId);
+      if (!mounted) return;
+
+      setState(() {
+        _record = rec;
+      });
+
+      // Stop refreshing if processing is complete
+      if (rec != null && rec.processingStatus == 'completed') {
+        timer.cancel();
+      }
     });
   }
 
@@ -127,245 +151,539 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     return text;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
-    final stored = app.getSessionTranscript(widget.sessionId);
-    final transcript = stored ?? widget.initialTranscript; // prefer stored
-    final duration =
-        widget.initialDurationSeconds ?? _record?.durationSeconds ?? 0;
-
-    final content = ListView(
-      padding: const EdgeInsets.all(20),
+  Widget _buildLoadingState() {
+    return ListView(
+      padding: EdgeInsets.zero,
       children: [
-        // Header section
-        Row(
-          children: [
-            const Icon(Icons.mic_none_rounded, color: Colors.black54),
-            const SizedBox(width: 8),
-            Text(
-              'Session Summary',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Duration and date row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+        // Header section with close button and session title
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.timer_outlined,
-                  size: 18,
-                  color: Colors.black54,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _formatDuration(duration),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.black54),
-                ),
-              ],
-            ),
-            Text(
-              _formatSessionDate(_record?.createdAt),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 32),
-
-        // Transcript section
-        if (transcript != null) ...[
-          Text(
-            'Your words',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
-          if (transcript.isNotEmpty) ...[
-            Text(
-              _getTruncatedTranscript(transcript),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.black54,
-                height: 1.35,
-              ),
-            ),
-            if (_shouldTruncateTranscript(transcript)) ...[
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _transcriptExpanded = !_transcriptExpanded;
-                  });
-                },
-                child: Text(
-                  _transcriptExpanded ? 'Read less' : 'Read more',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ] else ...[
-            Text(
-              'No transcript available for this session.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.black54,
-                height: 1.35,
-              ),
-            ),
-          ],
-          const SizedBox(height: 40),
-        ],
-
-        // Next Steps section
-        Text(
-          'Next Steps',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
-        ...List.generate(_nextSteps.length, (i) {
-          final done = _completed.contains(i);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _toggleStep(i),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                // Close button and title row
+                Row(
                   children: [
-                    Icon(
-                      done ? Icons.check_circle : Icons.circle_outlined,
-                      color: done ? AppColors.primary : Colors.black26,
-                      size: 22,
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () {
+                        final app = context.read<AppState>();
+                        if (app.openSessionId != null) {
+                          app.setOpenSession(null);
+                          return;
+                        }
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      tooltip: 'Close',
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _nextSteps[i],
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          decoration: done
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                          color: done ? Colors.black45 : Colors.black87,
-                          decorationThickness: 2,
+                        _record?.title ?? 'Processing Session...',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-          );
-        }),
-        if (_nextSteps.isEmpty)
-          Text(
-            'No actions yet.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-
-        const SizedBox(height: 40),
-
-        // Standout ideas section
-        if (_record != null && _record!.ideas.isNotEmpty) ...[
-          Text(
-            'Standout ideas',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
-          ...List.generate(_record!.ideas.length, (i) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '• ',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black54,
-                      fontWeight: FontWeight.w500,
+                const SizedBox(height: 16),
+                // Date and duration stacked tightly
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.mic_none_rounded,
+                          color: Colors.black54,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatSessionDate(_record?.createdAt),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ],
                     ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      _record!.ideas[i],
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(height: 1.35),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.timer_outlined,
+                          size: 18,
+                          color: Colors.black54,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatDuration(
+                            widget.initialDurationSeconds ??
+                                _record?.durationSeconds ??
+                                0,
+                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.black54),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 24),
-        ],
-
-        // Confetti widget
-      ],
-    );
-
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
-          onPressed: () {
-            final app = context.read<AppState>();
-            if (app.openSessionId != null) {
-              app.setOpenSession(null);
-              return;
-            }
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            }
-          },
-          tooltip: 'Close',
-        ),
-        title: const Text('Session'),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                content,
-                // Subtle confetti overlay when completing a step
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: ConfettiWidget(
-                    confettiController: _confetti,
-                    blastDirectionality: BlastDirectionality.explosive,
-                    emissionFrequency: 0.0,
-                    numberOfParticles: 18,
-                    gravity: 0.6,
-                    colors: const [
-                      AppColors.primary,
-                      Colors.blueAccent,
-                      Colors.orange,
-                      Colors.green,
-                    ],
-                  ),
+                  ],
                 ),
               ],
             ),
+          ),
+        ),
+        // Rest of content with padding
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Duration row
+              Row(
+                children: [
+                  const Icon(
+                    Icons.timer_outlined,
+                    size: 18,
+                    color: Colors.black54,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatDuration(
+                      widget.initialDurationSeconds ??
+                          _record?.durationSeconds ??
+                          0,
+                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // Processing indicator
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Analyzing your session...',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'We\'re transcribing your audio and generating insights. This usually takes 30-60 seconds.',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Show transcript if available from recording
+              if (_getDisplayTranscript() != null) ...[
+                Text(
+                  'Your words',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _getDisplayTranscript()!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.black54,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String? _getDisplayTranscript() {
+    // Prefer stored transcript from app state, fallback to database, then initial
+    final app = context.watch<AppState>();
+    final stored = app.getSessionTranscript(widget.sessionId);
+    return stored ?? _record?.transcript ?? widget.initialTranscript;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final duration =
+        widget.initialDurationSeconds ?? _record?.durationSeconds ?? 0;
+    final transcript = _getDisplayTranscript();
+
+    // Show loading state if processing
+    final isProcessing =
+        _record?.processingStatus == 'processing' ||
+        _record?.processingStatus == 'pending' ||
+        _record?.analysis == null;
+
+    final content = _loading
+        ? const Center(child: CircularProgressIndicator())
+        : isProcessing
+        ? _buildLoadingState()
+        : ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              // Header section with close button and session title
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Close button and title row
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () {
+                              final app = context.read<AppState>();
+                              if (app.openSessionId != null) {
+                                app.setOpenSession(null);
+                                return;
+                              }
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                            tooltip: 'Close',
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _record?.title ?? 'Session Summary',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Date and duration stacked tightly
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.mic_none_rounded,
+                                color: Colors.black54,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatSessionDate(_record?.createdAt),
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.timer_outlined,
+                                size: 18,
+                                color: Colors.black54,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _formatDuration(duration),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: Colors.black54),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Rest of content with padding and bottom spacing to avoid nav overlap
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Transcript section
+                    if (transcript != null && transcript.isNotEmpty) ...[
+                      Text(
+                        'Your words',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _getTruncatedTranscript(transcript),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.black54,
+                          height: 1.35,
+                        ),
+                      ),
+                      if (_shouldTruncateTranscript(transcript)) ...[
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _transcriptExpanded = !_transcriptExpanded;
+                            });
+                          },
+                          child: Text(
+                            _transcriptExpanded ? 'Read less' : 'Read more',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 40),
+                    ],
+
+                    // Next Steps section
+                    Text(
+                      'Next Steps',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_record != null && _record!.actions.isNotEmpty) ...[
+                      ...List.generate(_record!.actions.length, (i) {
+                        final action = _record!.actions[i];
+                        final done = _completed.contains(i);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => _toggleStep(i),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    done
+                                        ? Icons.check_circle
+                                        : Icons.circle_outlined,
+                                    color: done
+                                        ? AppColors.primary
+                                        : Colors.black26,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      action.description,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            decoration: done
+                                                ? TextDecoration.lineThrough
+                                                : TextDecoration.none,
+                                            color: done
+                                                ? Colors.black45
+                                                : Colors.black87,
+                                            decorationThickness: 2,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ] else ...[
+                      Text(
+                        'No actions generated yet.',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                      ),
+                    ],
+
+                    const SizedBox(height: 40),
+
+                    // Standout ideas section
+                    if (_record != null && _record!.ideas.isNotEmpty) ...[
+                      Text(
+                        'Standout ideas',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...List.generate(_record!.ideas.length, (i) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '• ',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  _record!.ideas[i],
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(height: 1.35),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Analysis insights (if available)
+                    if (_record?.analysis != null) ...[
+                      Text(
+                        'Session Insights',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_record!.analysis!.summaryAfter.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.green.withOpacity(0.1),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Key Insights',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.green.shade700,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _record!.analysis!.summaryAfter,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.copyWith(height: 1.35),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_record!.analysis!.strengthHighlight.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.1),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Strength Highlight',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _record!.analysis!.strengthHighlight,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.copyWith(height: 1.35),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          );
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          content,
+          // Subtle confetti overlay when completing a step
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confetti,
+              blastDirectionality: BlastDirectionality.explosive,
+              emissionFrequency: 0.0,
+              numberOfParticles: 18,
+              gravity: 0.6,
+              colors: const [
+                AppColors.primary,
+                Colors.blueAccent,
+                Colors.orange,
+                Colors.green,
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
