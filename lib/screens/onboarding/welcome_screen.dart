@@ -1,8 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../supabase/user_profile_api.dart';
-
-import '../theme/app_colors.dart';
+import '../../supabase/user_profile_api.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});

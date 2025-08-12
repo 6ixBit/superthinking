@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../state/app_state.dart';
-import '../theme/app_colors.dart';
-import '../supabase/user_profile_api.dart';
+import '../../state/app_state.dart';
+import '../../theme/app_colors.dart';
+import '../../supabase/user_profile_api.dart';
 
 class OnboardingFocusScreen extends StatefulWidget {
   const OnboardingFocusScreen({super.key});

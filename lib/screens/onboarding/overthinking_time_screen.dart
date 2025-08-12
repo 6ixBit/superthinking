@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../state/app_state.dart';
-import '../theme/app_colors.dart';
-import '../supabase/user_profile_api.dart';
+import '../../state/app_state.dart';
+import '../../theme/app_colors.dart';
+import '../../supabase/user_profile_api.dart';
 
 class OverthinkingTimeScreen extends StatefulWidget {
   const OverthinkingTimeScreen({super.key});
@@ -18,29 +18,7 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
   final List<String> _options = const ['Morning', 'Day', 'Evening'];
 
   Future<void> _continue() async {
-    final allow = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Enable notifications?'),
-        content: const Text(
-          'We\'ll gently remind you at the best time you choose. You can change this later in settings.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Don\'t Allow'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Allow'),
-          ),
-        ],
-      ),
-    );
-
-    if (allow == true) {
-      await Permission.notification.request();
-    }
+    await Permission.notification.request();
 
     if (_selected != null) {
       context.read<AppState>().addQuickAnswer('Overthink time: $_selected');
