@@ -52,6 +52,16 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     setState(() {
       _record = rec;
       _loading = false;
+
+      // Initialize completed actions based on database status
+      _completed.clear();
+      if (rec != null) {
+        for (int i = 0; i < rec.actions.length; i++) {
+          if (rec.actions[i].status == 'completed') {
+            _completed.add(i);
+          }
+        }
+      }
     });
 
     // If session is still processing, set up periodic refresh
@@ -75,6 +85,16 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
       setState(() {
         _record = rec;
+
+        // Update completed actions based on database status
+        _completed.clear();
+        if (rec != null) {
+          for (int i = 0; i < rec.actions.length; i++) {
+            if (rec.actions[i].status == 'completed') {
+              _completed.add(i);
+            }
+          }
+        }
       });
 
       // Stop refreshing if processing is complete
@@ -110,15 +130,67 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     }
   }
 
-  void _toggleStep(int index) {
+  void _toggleStep(int index) async {
+    if (_record == null || index >= _record!.actions.length) return;
+
+    final action = _record!.actions[index];
+    final isCompleted = _completed.contains(index);
+    final newStatus = isCompleted ? 'pending' : 'completed';
+
+    print('[SessionDetail] Toggling action $index: ${action.description}');
+    print('[SessionDetail] Action ID: ${action.id}');
+    print('[SessionDetail] Current status: ${action.status}');
+    print('[SessionDetail] New status: $newStatus');
+
+    // Update local state immediately for responsive UI
     setState(() {
-      if (_completed.contains(index)) {
+      if (isCompleted) {
         _completed.remove(index);
       } else {
         _completed.add(index);
         _confetti.play();
       }
     });
+
+    // Update database in background
+    try {
+      final success = await SessionApi.updateActionItemStatus(
+        action.id,
+        newStatus,
+      );
+      if (!success) {
+        print('[SessionDetail] Database update failed, reverting UI');
+        // Revert local state if database update failed
+        setState(() {
+          if (isCompleted) {
+            _completed.add(index);
+          } else {
+            _completed.remove(index);
+          }
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to update action item. Please try again.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        print('[SessionDetail] Database update successful');
+      }
+    } catch (e) {
+      print('[SessionDetail] Error updating action item: $e');
+      // Revert local state on error
+      setState(() {
+        if (isCompleted) {
+          _completed.add(index);
+        } else {
+          _completed.remove(index);
+        }
+      });
+    }
   }
 
   bool _shouldTruncateTranscript(String text) {

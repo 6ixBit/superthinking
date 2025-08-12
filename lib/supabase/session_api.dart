@@ -286,4 +286,32 @@ class SessionApi {
       return false;
     }
   }
+
+  static Future<bool> updateActionItemStatus(
+    String actionItemId,
+    String status,
+  ) async {
+    try {
+      print(
+        '[SessionApi] Updating action item $actionItemId to status: $status',
+      );
+      final client = SupabaseService.client;
+      final user = client.auth.currentUser;
+      if (user == null) {
+        print('[SessionApi] No authenticated user');
+        return false;
+      }
+
+      await client
+          .from('action_items')
+          .update({'status': status})
+          .eq('id', actionItemId);
+
+      print('[SessionApi] Action item updated successfully');
+      return true;
+    } catch (e) {
+      print('[SessionApi] Error updating action item status: $e');
+      return false;
+    }
+  }
 }
