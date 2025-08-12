@@ -30,6 +30,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   );
   final Set<int> _completed = <int>{};
   List<String> _nextSteps = const [];
+  bool _transcriptExpanded = false;
 
   @override
   void initState() {
@@ -94,6 +95,36 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         _confetti.play();
       }
     });
+  }
+
+  bool _shouldTruncateTranscript(String text) {
+    // Count approximate lines by counting characters
+    // Roughly 50-60 characters per line on mobile
+    return text.length > 240; // ~4 lines worth of text
+  }
+
+  String _getTruncatedTranscript(String text) {
+    if (!_shouldTruncateTranscript(text) || _transcriptExpanded) {
+      return text;
+    }
+
+    // Find a good break point around 4 lines (240 chars)
+    int breakPoint = 240;
+    if (text.length > breakPoint) {
+      // Try to break at a sentence or word boundary
+      int lastPeriod = text.lastIndexOf('.', breakPoint);
+      int lastSpace = text.lastIndexOf(' ', breakPoint);
+
+      if (lastPeriod > breakPoint - 50) {
+        breakPoint = lastPeriod + 1;
+      } else if (lastSpace > breakPoint - 20) {
+        breakPoint = lastSpace;
+      }
+
+      return text.substring(0, breakPoint).trim();
+    }
+
+    return text;
   }
 
   @override
@@ -161,15 +192,40 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
-          Text(
-            transcript.isNotEmpty
-                ? transcript
-                : 'No transcript available for this session.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black54,
-              height: 1.35,
+          if (transcript.isNotEmpty) ...[
+            Text(
+              _getTruncatedTranscript(transcript),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.black54,
+                height: 1.35,
+              ),
             ),
-          ),
+            if (_shouldTruncateTranscript(transcript)) ...[
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _transcriptExpanded = !_transcriptExpanded;
+                  });
+                },
+                child: Text(
+                  _transcriptExpanded ? 'Read less' : 'Read more',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ] else ...[
+            Text(
+              'No transcript available for this session.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.black54,
+                height: 1.35,
+              ),
+            ),
+          ],
           const SizedBox(height: 40),
         ],
 

@@ -137,4 +137,36 @@ class SessionApi {
       actions: actions,
     );
   }
+
+  static Future<bool> deleteSession(String sessionId) async {
+    try {
+      final client = SupabaseService.client;
+      final user = client.auth.currentUser;
+      if (user == null) return false;
+
+      // Delete in order: action_items, session_analysis, then sessions
+      // This respects foreign key constraints
+
+      await client.from('action_items').delete().eq('session_id', sessionId);
+
+      await client
+          .from('session_analysis')
+          .delete()
+          .eq('session_id', sessionId);
+
+      await client
+          .from('sessions')
+          .delete()
+          .eq('id', sessionId)
+          .eq(
+            'user_id',
+            user.id,
+          ); // Ensure user can only delete their own sessions
+
+      return true;
+    } catch (e) {
+      print('Error deleting session: $e');
+      return false;
+    }
+  }
 }

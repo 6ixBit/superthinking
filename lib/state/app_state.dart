@@ -126,4 +126,29 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> deleteSession(String sessionId) async {
+    try {
+      final success = await SessionApi.deleteSession(sessionId);
+      if (success) {
+        // Remove from local list
+        sessions.removeWhere((session) => session.id == sessionId);
+
+        // Clear open session if it was the deleted one
+        if (openSessionId == sessionId) {
+          openSessionId = null;
+        }
+
+        // Clear transcript for this session
+        sessionIdToTranscript.remove(sessionId);
+
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Error in AppState.deleteSession: $e');
+      return false;
+    }
+  }
 }

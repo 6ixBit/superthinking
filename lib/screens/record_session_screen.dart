@@ -69,10 +69,9 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
           setState(() {
             final words = r.recognizedWords.trim();
             if (words.isNotEmpty) {
-              // Only update if we got a final result or if current transcript is empty
-              if (r.finalResult || transcript.isEmpty) {
-                transcript = words;
-              }
+              // Always update with the latest recognized words
+              // speech_to_text accumulates words automatically
+              transcript = words;
             }
           });
         },
