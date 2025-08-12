@@ -60,5 +60,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We transcribe your voice to text during sessions.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We use the microphone to record your session.</string>
 </dict>
 </plist>

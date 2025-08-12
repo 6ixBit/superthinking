@@ -5,12 +5,14 @@ import 'supabase_client.dart';
 class SessionRecord {
   final String id;
   final DateTime createdAt;
+  final int? durationSeconds;
   final List<String> ideas;
   final List<String> actions;
 
   SessionRecord({
     required this.id,
     required this.createdAt,
+    required this.durationSeconds,
     required this.ideas,
     required this.actions,
   });
@@ -25,7 +27,7 @@ class SessionApi {
 
     final sessionsRes = await client
         .from('sessions')
-        .select('id, created_at')
+        .select('id, created_at, duration_seconds')
         .eq('user_id', user.id)
         .order('created_at', ascending: false);
 
@@ -80,12 +82,59 @@ class SessionApi {
     return sessionRows.map((r) {
       final id = r['id'] as String;
       final createdAt = DateTime.parse(r['created_at'] as String);
+      final duration = r['duration_seconds'] as int?;
       return SessionRecord(
         id: id,
         createdAt: createdAt,
+        durationSeconds: duration,
         ideas: sessionIdToIdeas[id] ?? const <String>[],
         actions: sessionIdToActions[id] ?? const <String>[],
       );
     }).toList();
+  }
+
+  static Future<SessionRecord?> fetchSessionById(String sessionId) async {
+    final client = SupabaseService.client;
+    final row = await client
+        .from('sessions')
+        .select('id, created_at, duration_seconds')
+        .eq('id', sessionId)
+        .maybeSingle();
+    if (row == null) return null;
+
+    final ideasRows = await client
+        .from('session_analysis')
+        .select('best_ideas')
+        .eq('session_id', sessionId);
+    final actionsRows = await client
+        .from('action_items')
+        .select('description')
+        .eq('session_id', sessionId);
+
+    final ideas = <String>[];
+    if (ideasRows is List && ideasRows.isNotEmpty) {
+      final list = ideasRows.first['best_ideas'];
+      if (list is List) {
+        for (final v in list) {
+          if (v is String) ideas.add(v);
+        }
+      }
+    }
+
+    final actions = <String>[];
+    if (actionsRows is List) {
+      for (final r in actionsRows) {
+        final desc = r['description'] as String?;
+        if (desc != null) actions.add(desc);
+      }
+    }
+
+    return SessionRecord(
+      id: row['id'] as String,
+      createdAt: DateTime.parse(row['created_at'] as String),
+      durationSeconds: row['duration_seconds'] as int?,
+      ideas: ideas,
+      actions: actions,
+    );
   }
 }

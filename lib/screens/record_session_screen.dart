@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
@@ -25,6 +26,8 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   ];
   int promptIndex = 0;
 
+  late final stt.SpeechToText _speech;
+
   Duration _recordElapsed = Duration.zero;
   Timer? _recordTimer;
   final List<Map<String, dynamic>> _promptEvents = [];
@@ -35,29 +38,58 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     return '$m:$s';
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _speech = stt.SpeechToText();
+  }
+
   Future<void> _startRecording() async {
     setState(() {
       isRecording = true;
-      transcript = '';
-      promptIndex = 0;
       _recordElapsed = Duration.zero;
+      transcript = '';
       _promptEvents.clear();
     });
 
-    _recordTimer?.cancel();
-    _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || !isRecording) return;
+    _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         _recordElapsed += const Duration(seconds: 1);
       });
     });
+
+    // Initialize speech recognition
+    final available = await _speech.initialize(
+      onStatus: (s) {},
+      onError: (e) {},
+    );
+    if (available) {
+      await _speech.listen(
+        onResult: (r) {
+          setState(() {
+            final words = r.recognizedWords.trim();
+            if (words.isNotEmpty) {
+              // Only update if we got a final result or if current transcript is empty
+              if (r.finalResult || transcript.isEmpty) {
+                transcript = words;
+              }
+            }
+          });
+        },
+        listenMode: stt.ListenMode.dictation,
+        pauseFor: const Duration(seconds: 2),
+        partialResults: true,
+        listenFor: const Duration(minutes: 10),
+        localeId: null,
+        cancelOnError: true,
+      );
+    }
 
     for (int i = 0; i < prompts.length && isRecording; i++) {
       await Future.delayed(const Duration(seconds: 2));
       if (!mounted || !isRecording) break;
       setState(() {
         promptIndex = i;
-        transcript += '\n[prompt] ${prompts[i]}';
         _promptEvents.add({
           'text': prompts[i],
           'ts_seconds': _recordElapsed.inSeconds,
@@ -70,17 +102,28 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     if (!isRecording) return;
     _recordTimer?.cancel();
     setState(() => isRecording = false);
-    context.read<AppState>().setTranscript('User thoughts... $transcript');
+
+    if (_speech.isListening) {
+      await _speech.stop();
+    }
+
+    context.read<AppState>().setTranscript(transcript);
     context.read<AppState>().synthesizeMagic();
     try {
       final sessionId = await SessionRepo.createPendingSession(
         durationSeconds: _recordElapsed.inSeconds,
         promptsShown: List<Map<String, dynamic>>.from(_promptEvents),
       );
-      // TODO: upload audio and call edge function
+      if (!mounted) return;
+      context.read<AppState>().setSessionTranscript(sessionId, transcript);
+      context.read<AppState>().setOpenSession(sessionId);
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil('/home', (r) => false, arguments: 0);
+      return;
     } catch (_) {}
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/loading');
+    Navigator.of(context).pushNamed('/home');
   }
 
   @override

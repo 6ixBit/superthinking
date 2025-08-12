@@ -1,11 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:provider/provider.dart';
 
 import 'record_session_screen.dart';
 import 'sessions_screen.dart';
 import 'profile_screen.dart';
 import '../theme/app_colors.dart';
+import '../state/app_state.dart';
 
 class _NavItem {
   final String label;
@@ -29,6 +31,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 1; // default to Record (middle)
+  bool _appliedInitialIndex = false;
 
   late final List<_NavItem> _items;
 
@@ -58,10 +61,25 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_appliedInitialIndex) return;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is int && args >= 0 && args < 3) {
+      _index = args;
+    }
+    _appliedInitialIndex = true;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final navBar = NavigationBar(
       selectedIndex: _index,
-      onDestinationSelected: (i) => setState(() => _index = i),
+      onDestinationSelected: (i) => setState(() {
+        // Always clear any open session when interacting with the nav
+        context.read<AppState>().setOpenSession(null);
+        _index = i;
+      }),
       destinations: _items
           .map(
             (e) => NavigationDestination(

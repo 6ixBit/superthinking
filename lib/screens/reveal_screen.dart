@@ -7,96 +7,160 @@ import '../theme/app_colors.dart';
 class RevealScreen extends StatelessWidget {
   const RevealScreen({super.key});
 
+  String _formatDuration(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final transcript = app.recordedTranscript;
+    final selected = app.sessions.isNotEmpty ? app.sessions.first : null;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('The Reveal')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Session'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text(
-            'Look how your thinking just transformed in minutes.',
-            style: Theme.of(context).textTheme.headlineMedium,
+          // Header: duration + date
+          Row(
+            children: [
+              const Icon(Icons.mic_none_rounded, color: Colors.black54),
+              const SizedBox(width: 8),
+              Text(
+                'Recent session',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
           ),
+          const SizedBox(height: 8),
+          if (selected != null)
+            Row(
+              children: [
+                const Icon(
+                  Icons.timer_outlined,
+                  size: 18,
+                  color: Colors.black54,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _formatDuration(selected.durationSeconds ?? 0),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                ),
+              ],
+            ),
           const SizedBox(height: 16),
-          _beforeAfter(
-            title: 'Before',
-            color: AppColors.danger.withOpacity(0.08),
-            text: (() {
-              final parts = app.recordedTranscript.split('\n');
-              return parts.isNotEmpty
-                  ? parts.first
-                  : 'I am worried this will go wrong…';
-            })(),
+
+          // Transcript
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your transcript',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    transcript.isNotEmpty
+                        ? transcript
+                        : 'No transcript available for this session.',
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
-          _beforeAfter(
-            title: 'After',
-            color: AppColors.success.withOpacity(0.08),
-            text: 'I can turn this into a series of small wins.',
-          ),
+
           const SizedBox(height: 16),
-          _bulletSection('✨ 3 best ideas you mentioned', app.bestIdeas),
-          _bulletSection(
-            '🎯 3 action steps AI distilled from your words',
-            app.actionSteps,
+
+          // Action steps
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Channel your thoughts into something productive',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...app.actionSteps.map(
+                    (e) => Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 2,
+                        ),
+                        leading: const Icon(
+                          Icons.check_circle_outline,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(e),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          _bulletSection('💪 A hidden strength you revealed', [
-            app.hiddenStrength,
-          ]),
+
           const SizedBox(height: 16),
+
+          // Best ideas
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Standout ideas from this session',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...app.bestIdeas.map(
+                    (e) => Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• '),
+                        Expanded(child: Text(e)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
           FilledButton(
             onPressed: () => Navigator.of(context).pushNamed('/micro'),
             child: const Text('Continue'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _beforeAfter({
-    required String title,
-    required Color color,
-    required String text,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          Text(text),
-        ],
-      ),
-    );
-  }
-
-  Widget _bulletSection(String title, List<String> items) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            ...items.map(
-              (e) => Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('• '),
-                  Expanded(child: Text(e)),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

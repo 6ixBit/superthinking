@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
 import '../supabase/user_profile_api.dart';
+import 'session_detail_screen.dart';
 
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
@@ -51,6 +52,10 @@ class _SessionsScreenState extends State<SessionsScreen> {
     final sessions = app.sessions;
     final computed = _computeCurrentStreakDays(sessions);
     final streak = computed > 0 ? computed : _profileStreak;
+
+    if (app.openSessionId != null) {
+      return SessionDetailScreen(sessionId: app.openSessionId!);
+    }
 
     final fmt = DateFormat('EEE, MMM d • h:mm a');
     return Scaffold(
@@ -129,33 +134,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text(s.title),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Best ideas'),
-                                const SizedBox(height: 6),
-                                ...s.ideas.map((e) => Text('- $e')),
-                                const SizedBox(height: 12),
-                                const Text('Actions'),
-                                const SizedBox(height: 6),
-                                ...s.actions.map((e) => Text('- $e')),
-                                const SizedBox(height: 12),
-                                Text('Strength: ${s.strength}'),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text('Close'),
-                              ),
-                            ],
-                          ),
-                        );
+                        context.read<AppState>().setOpenSession(s.id);
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(16),

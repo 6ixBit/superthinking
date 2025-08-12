@@ -2,18 +2,22 @@ import 'package:flutter/foundation.dart';
 import '../supabase/session_api.dart';
 
 class Session {
+  final String id;
   final DateTime createdAt;
   final String title;
   final List<String> ideas;
   final List<String> actions;
   final String strength;
+  final int? durationSeconds;
 
   Session({
+    required this.id,
     required this.createdAt,
     required this.title,
     required this.ideas,
     required this.actions,
     required this.strength,
+    this.durationSeconds,
   });
 }
 
@@ -21,6 +25,7 @@ class AppState extends ChangeNotifier {
   String? biggestChallenge;
   final List<String> quickAnswers = [];
   String recordedTranscript = '';
+  final Map<String, String> sessionIdToTranscript = {};
   List<String> bestIdeas = [];
   List<String> actionSteps = [];
   String hiddenStrength = '';
@@ -28,6 +33,12 @@ class AppState extends ChangeNotifier {
 
   final List<Session> sessions = [];
   bool loadingSessions = false;
+
+  String? openSessionId;
+  void setOpenSession(String? sessionId) {
+    openSessionId = sessionId;
+    notifyListeners();
+  }
 
   void setChallenge(String value) {
     biggestChallenge = value;
@@ -43,6 +54,14 @@ class AppState extends ChangeNotifier {
     recordedTranscript = value;
     notifyListeners();
   }
+
+  void setSessionTranscript(String sessionId, String transcript) {
+    sessionIdToTranscript[sessionId] = transcript;
+    notifyListeners();
+  }
+
+  String? getSessionTranscript(String sessionId) =>
+      sessionIdToTranscript[sessionId];
 
   void synthesizeMagic() {
     bestIdeas = [
@@ -60,6 +79,7 @@ class AppState extends ChangeNotifier {
     sessions.insert(
       0,
       Session(
+        id: 'local',
         createdAt: DateTime.now(),
         title: biggestChallenge?.isNotEmpty == true
             ? biggestChallenge!
@@ -67,6 +87,7 @@ class AppState extends ChangeNotifier {
         ideas: List<String>.from(bestIdeas),
         actions: List<String>.from(actionSteps),
         strength: hiddenStrength,
+        durationSeconds: null,
       ),
     );
 
@@ -88,11 +109,13 @@ class AppState extends ChangeNotifier {
         ..addAll(
           records.map(
             (r) => Session(
+              id: r.id,
               createdAt: r.createdAt,
               title: 'SuperThinking Session',
               ideas: r.ideas,
               actions: r.actions,
               strength: '',
+              durationSeconds: r.durationSeconds,
             ),
           ),
         );

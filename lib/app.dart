@@ -19,6 +19,7 @@ import 'screens/onboarding/overthinking_time_screen.dart';
 import 'supabase/user_profile_api.dart';
 import 'supabase/supabase_client.dart';
 import 'screens/dev/dev_catalog_screen.dart';
+import 'screens/session_detail_screen.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -58,6 +59,18 @@ class SuperThinkingApp extends StatelessWidget {
         '/nudge': (_) => const NextSessionNudgeScreen(),
         '/home': (_) => const HomeShell(),
         '/dev': (_) => const DevCatalogScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/session') {
+          final arg = settings.arguments;
+          if (arg is String) {
+            return MaterialPageRoute(
+              builder: (_) => SessionDetailScreen(sessionId: arg),
+              settings: settings,
+            );
+          }
+        }
+        return null;
       },
     );
   }
