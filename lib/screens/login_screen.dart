@@ -24,6 +24,25 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _navigated = false;
 
+  void _showDocument(String title, String body) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(child: Text(body)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -213,6 +232,98 @@ class _LoginScreenState extends State<LoginScreen> {
                       foreground: Colors.white,
                       icon: const Icon(Icons.bolt, color: Colors.white),
                       label: 'Super Login (skip)',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 12,
+            child: SafeArea(
+              top: false,
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () => _showDocument(
+                        'Terms of Service',
+                        '''Welcome to SuperThinking. By accessing or using the app, you agree to these Terms of Service.
+
+1) Purpose of the Service
+SuperThinking helps you transform overthinking into clarity by recording short sessions, transcribing them, and generating insights and suggested next steps. It is intended for wellbeing and productivity support only. It is not medical, legal, or other professional advice.
+
+2) Eligibility & Accounts
+You must be 13+ to use SuperThinking. You are responsible for your account and for keeping your device secure. If you use third‑party sign‑in (e.g., Apple), you authorize us to receive basic account information to create or access your account.
+
+3) Your Content & License
+You retain ownership of all content you create (e.g., audio, transcripts, session insights, action items). You grant SuperThinking a limited, non‑exclusive license to host, process, and display your content solely to provide and improve the Service. You can delete sessions in‑app; related analysis and action items are removed.
+
+4) AI‑Generated Insights
+We use AI services to transcribe audio and generate insights. Outputs may be imperfect or incomplete. You agree not to rely on them as professional advice.
+
+5) Acceptable Use
+Do not use the app while driving or in unsafe situations. Do not upload unlawful, harmful, or infringing content. Do not misuse or attempt to disrupt the Service.
+
+6) Changes, Suspension, Termination
+We may modify or discontinue parts of the Service. We may suspend or terminate accounts that violate these Terms or pose risk to the Service or users.
+
+7) Disclaimers & Limitation of Liability
+The Service is provided “as is.” To the maximum extent permitted by law, SuperThinking disclaims all warranties and will not be liable for indirect, incidental, or consequential damages.
+
+8) Governing Law
+These Terms are governed by applicable laws in your jurisdiction unless local law requires otherwise.
+
+9) Contact
+Questions? Contact support@superthinking.app.''',
+                      ),
+                      child: const Text('Terms of Service'),
+                    ),
+                    Text(
+                      '•',
+                      style: TextStyle(color: Colors.black.withOpacity(0.4)),
+                    ),
+                    TextButton(
+                      onPressed: () => _showDocument(
+                        'Privacy Policy',
+                        '''This Privacy Policy explains how SuperThinking collects, uses, and protects your information.
+
+1) Information We Collect
+- Account information: Email or basic profile details from your chosen sign‑in provider.
+- Session content: Audio you record, transcripts, session analysis, and action items you create.
+- Usage data: Basic app interactions and diagnostics to improve the Service.
+
+2) How We Use Your Information
+- To operate the app (record, transcribe, analyze sessions, and show insights).
+- To improve the experience (e.g., enhance accuracy and reliability).
+- To provide support and maintain security.
+
+3) AI & Third‑Party Services
+- We use reputable AI providers (e.g., transcription and language models) to process audio and generate insights. Only the minimal necessary data is shared, and it is transmitted securely.
+
+4) Data Retention & Deletion
+- You may delete sessions from within the app; related analysis and action items are also removed.
+- You may request account deletion at any time via support@superthinking.app.
+
+5) Security
+- We use industry‑standard measures to protect your data. No method is 100% secure, but we continually improve our safeguards.
+
+6) Your Rights
+- You may access, correct, or delete your data. Contact support@superthinking.app for requests.
+
+7) Children
+- SuperThinking is not directed to children under 13. If you believe a child provided data, contact us to remove it.
+
+8) Changes
+- We may update this policy and will post the latest version in‑app.
+
+9) Contact
+- Questions? Contact support@superthinking.app.''',
+                      ),
+                      child: const Text('Privacy Policy'),
                     ),
                   ],
                 ),
