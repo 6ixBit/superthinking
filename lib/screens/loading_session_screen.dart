@@ -22,6 +22,14 @@ class _LoadingSessionScreenState extends State<LoadingSessionScreen>
   late final AnimationController _controller;
   Timer? _pollTimer;
   int _pollAttempts = 0;
+  Timer? _msgTimer;
+  int _msgIndex = 0;
+  static const List<String> _messages = [
+    'Determining your thinking style…',
+    'Pinpointing your strengths…',
+    'Calculating your sentiment…',
+    'Finalizing insights…',
+  ];
 
   @override
   void initState() {
@@ -33,6 +41,7 @@ class _LoadingSessionScreenState extends State<LoadingSessionScreen>
     )..repeat(reverse: true);
     _checkOnce();
     _startPolling();
+    _startMessageCycle();
   }
 
   // Check immediately and navigate if done
@@ -61,6 +70,16 @@ class _LoadingSessionScreenState extends State<LoadingSessionScreen>
     });
   }
 
+  void _startMessageCycle() {
+    _msgTimer?.cancel();
+    _msgTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      setState(() {
+        _msgIndex = (_msgIndex + 1) % _messages.length;
+      });
+    });
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -74,6 +93,7 @@ class _LoadingSessionScreenState extends State<LoadingSessionScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
+    _msgTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -86,26 +106,56 @@ class _LoadingSessionScreenState extends State<LoadingSessionScreen>
           animation: _controller,
           builder: (context, child) {
             final t = _controller.value;
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            final isTop = _msgIndex % 2 == 0;
+            return Stack(
+              alignment: Alignment.center,
               children: [
-                Container(
-                  width: 100 + 8 * t,
-                  height: 100 + 8 * t,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.08),
-                  ),
-                  child: Icon(
-                    CupertinoIcons.sparkles,
-                    color: AppColors.primary,
-                    size: 44 + 6 * t,
-                  ),
+                // Central analyzing component
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 100 + 8 * t,
+                      height: 100 + 8 * t,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                      ),
+                      child: Icon(
+                        CupertinoIcons.sparkles,
+                        color: AppColors.primary,
+                        size: 44 + 6 * t,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Analyzing your session...',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Analyzing your session...',
-                  style: Theme.of(context).textTheme.titleMedium,
+                // Large muted rotating status text positioned above or below
+                Align(
+                  alignment: isTop
+                      ? const Alignment(0, -0.6)
+                      : const Alignment(0, 0.6),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    transitionBuilder: (child, anim) =>
+                        FadeTransition(opacity: anim, child: child),
+                    child: Text(
+                      _messages[_msgIndex],
+                      key: ValueKey('overlay_${_msgIndex}'),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black.withValues(alpha: 0.15),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             );
