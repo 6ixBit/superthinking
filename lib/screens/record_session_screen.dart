@@ -291,10 +291,9 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
                         onTap: () {
                           isRecording ? _stopRecording() : _startRecording();
                         },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          width: isRecording ? 120 : 108,
-                          height: isRecording ? 120 : 108,
+                        child: Container(
+                          width: 120,
+                          height: 120,
                           decoration: BoxDecoration(
                             color: isRecording
                                 ? AppColors.danger.withOpacity(0.9)
