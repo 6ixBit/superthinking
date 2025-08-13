@@ -160,6 +160,7 @@ ANALYSIS INSTRUCTIONS:
 - solution_focus_percentage: Calculate percentage of time spent on solutions, actions, possibilities (0-100) 
 - shift_percentage: How much did thinking shift from problem to solution during session (0-100)
 - thinking_style_today: Identify dominant thinking pattern from: "Vision Mapper" (future-focused, "what if"), "Strategic Connector" (logical, step-by-step), "Creative Explorer" (innovative, unconventional), "Reflective Processor" (deep, contemplative)
+- actions: ALWAYS include 1-3 specific, concise next steps. Each must have description, category, priority (low|medium|high), source (user_stated|ai_suggested).
 
 {
   "summary_before": "Brief summary of initial thoughts/problems",

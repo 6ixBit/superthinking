@@ -14,6 +14,7 @@ import '../theme/app_colors.dart';
 import '../supabase/session_repo.dart';
 import '../services/storage.dart';
 import '../supabase/supabase_client.dart';
+import 'loading_session_screen.dart';
 
 // Helper for unawaited
 void unawaited(Future<void> future) {
@@ -217,9 +218,12 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       } else {
         print('[RecordSession] WARNING: No audio file path to upload');
       }
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/home', (r) => false, arguments: 0);
+      // Go to analyzing screen for this session while backend processes
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => LoadingSessionScreen(sessionId: sessionId),
+        ),
+      );
       return;
     } catch (e, stackTrace) {
       print('[RecordSession] ERROR creating session: $e');

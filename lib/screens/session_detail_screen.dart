@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../supabase/session_api.dart';
 import '../theme/app_colors.dart';
+import 'loading_session_screen.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import 'package:confetti/confetti.dart';
@@ -628,336 +629,330 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         widget.initialDurationSeconds ?? _record?.durationSeconds ?? 0;
     final transcript = _getDisplayTranscript();
 
-    // Show loading state if processing
+    // Show loading state only when backend is processing
     final isProcessing =
         _record?.processingStatus == 'processing' ||
-        _record?.processingStatus == 'pending' ||
-        _record?.analysis == null;
+        _record?.processingStatus == 'pending';
 
-    final content = _loading
-        ? const Center(child: CircularProgressIndicator())
-        : isProcessing
-        ? _buildLoadingState()
-        : ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              // Header section with close button and session title
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Close button and title row
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.close_rounded),
-                            onPressed: () {
-                              final app = context.read<AppState>();
-                              if (app.openSessionId != null) {
-                                app.setOpenSession(null);
-                                return;
-                              }
-                              if (Navigator.of(context).canPop()) {
-                                Navigator.of(context).pop();
-                              }
-                            },
-                            tooltip: 'Close',
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _record?.title ?? 'Session Summary',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Date and duration stacked tightly
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.mic_none_rounded,
-                                color: Colors.black54,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _formatSessionDate(_record?.createdAt),
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.timer_outlined,
-                                size: 18,
-                                color: Colors.black54,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _formatDuration(duration),
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: Colors.black54),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Rest of content with padding and bottom spacing to avoid nav overlap
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    // When fetching the record for the first time, show a small spinner
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Do not redirect to analyzing screen from here; render what we have
+    final content = ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        // Header section with close button and session title
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Close button and title row
+                Row(
                   children: [
-                    // Thinking Style Badge
-                    if (_record?.analysis != null) ...[
-                      _buildThinkingStyleBadge(),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Transcript section
-                    if (transcript != null && transcript.isNotEmpty) ...[
-                      Text(
-                        'Your words',
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () {
+                        final app = context.read<AppState>();
+                        if (app.openSessionId != null) {
+                          app.setOpenSession(null);
+                          return;
+                        }
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      tooltip: 'Close',
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _record?.title ?? 'Session Summary',
+                        textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _getTruncatedTranscript(transcript),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.black54,
-                          height: 1.35,
-                        ),
-                      ),
-                      if (_shouldTruncateTranscript(transcript)) ...[
-                        const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _transcriptExpanded = !_transcriptExpanded;
-                            });
-                          },
-                          child: Text(
-                            _transcriptExpanded ? 'Read less' : 'Read more',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 40),
-                    ],
-
-                    // Next Steps section
-                    Text(
-                      'Next Steps',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    if (_record != null && _record!.actions.isNotEmpty) ...[
-                      ...List.generate(_record!.actions.length, (i) {
-                        final action = _record!.actions[i];
-                        final done = _completed.contains(i);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () => _toggleStep(i),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 8,
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    done
-                                        ? Icons.check_circle
-                                        : Icons.circle_outlined,
-                                    color: done
-                                        ? AppColors.primary
-                                        : Colors.black26,
-                                    size: 22,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      action.description,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge
-                                          ?.copyWith(
-                                            decoration: done
-                                                ? TextDecoration.lineThrough
-                                                : TextDecoration.none,
-                                            color: done
-                                                ? Colors.black45
-                                                : Colors.black87,
-                                            decorationThickness: 2,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ] else ...[
-                      Text(
-                        'No actions generated yet.',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
-                      ),
-                    ],
-
-                    const SizedBox(height: 40),
-
-                    // Standout ideas section
-                    if (_record != null && _record!.ideas.isNotEmpty) ...[
-                      Text(
-                        'Standout ideas',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...List.generate(_record!.ideas.length, (i) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '• ',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black54,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  _record!.ideas[i],
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(height: 1.35),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Analysis insights (if available)
-                    if (_record?.analysis != null) ...[
-                      Text(
-                        'Session Insights',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_record!.analysis!.summaryAfter.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.green.withOpacity(0.1),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Key Insights',
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.green.shade700,
-                                    ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _record!.analysis!.summaryAfter,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium?.copyWith(height: 1.35),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (_record!.analysis!.strengthHighlight.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.primary.withOpacity(0.1),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Strength Highlight',
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
-                                    ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _record!.analysis!.strengthHighlight,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium?.copyWith(height: 1.35),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-
-                    // Attributes and Progress Visualization
-                    if (_record!.analysis != null) ...[
-                      const SizedBox(height: 32),
-                      _buildShiftScoreSection(),
-                    ],
                   ],
                 ),
+                const SizedBox(height: 16),
+                // Date and duration stacked tightly
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.mic_none_rounded,
+                          color: Colors.black54,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatSessionDate(_record?.createdAt),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.timer_outlined,
+                          size: 18,
+                          color: Colors.black54,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatDuration(duration),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Rest of content with padding and bottom spacing to avoid nav overlap
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thinking Style Badge
+              if (_record?.analysis != null) ...[
+                _buildThinkingStyleBadge(),
+                const SizedBox(height: 24),
+              ],
+
+              // Transcript section
+              if (transcript != null && transcript.isNotEmpty) ...[
+                Text(
+                  'Your words',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _getTruncatedTranscript(transcript),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.black54,
+                    height: 1.35,
+                  ),
+                ),
+                if (_shouldTruncateTranscript(transcript)) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _transcriptExpanded = !_transcriptExpanded;
+                      });
+                    },
+                    child: Text(
+                      _transcriptExpanded ? 'Read less' : 'Read more',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 40),
+              ],
+
+              // Next Steps section
+              Text(
+                'Next Steps',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
+              const SizedBox(height: 12),
+              if (_record != null && _record!.actions.isNotEmpty) ...[
+                ...List.generate(_record!.actions.length, (i) {
+                  final action = _record!.actions[i];
+                  final done = _completed.contains(i);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _toggleStep(i),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              done ? Icons.check_circle : Icons.circle_outlined,
+                              color: done ? AppColors.primary : Colors.black26,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                action.description,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      decoration: done
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none,
+                                      color: done
+                                          ? Colors.black45
+                                          : Colors.black87,
+                                      decorationThickness: 2,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ] else ...[
+                Text(
+                  'No actions generated yet.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                ),
+              ],
+
+              const SizedBox(height: 40),
+
+              // Standout ideas section
+              if (_record != null && _record!.ideas.isNotEmpty) ...[
+                Text(
+                  'Standout ideas',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                ...List.generate(_record!.ideas.length, (i) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '• ',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            _record!.ideas[i],
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(height: 1.35),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 24),
+              ],
+
+              // Analysis insights (if available)
+              if (_record?.analysis != null) ...[
+                Text(
+                  'Session Insights',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                if (_record!.analysis!.summaryAfter.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.withOpacity(0.1)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Key Insights',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green.shade700,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _record!.analysis!.summaryAfter,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(height: 1.35),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_record!.analysis!.strengthHighlight.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Strength Highlight',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _record!.analysis!.strengthHighlight,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(height: 1.35),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+
+              // Attributes and Progress Visualization
+              if (_record!.analysis != null) ...[
+                const SizedBox(height: 32),
+                _buildShiftScoreSection(),
+              ],
             ],
-          );
+          ),
+        ),
+      ],
+    );
 
     return WillPopScope(
       onWillPop: () async {
