@@ -74,8 +74,12 @@ class _LoadingSessionScreenState extends State<LoadingSessionScreen>
     _msgTimer?.cancel();
     _msgTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
+      if (_msgIndex >= _messages.length - 1) {
+        _msgTimer?.cancel();
+        return;
+      }
       setState(() {
-        _msgIndex = (_msgIndex + 1) % _messages.length;
+        _msgIndex = _msgIndex + 1;
       });
     });
   }
