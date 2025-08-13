@@ -155,14 +155,20 @@ serve(async (req) => {
     console.log("[ProcessSession] Starting session analysis...");
     const prompt = `Analyze this thinking session transcript and return JSON with the following structure:
 
+ANALYSIS INSTRUCTIONS:
+- problem_focus_percentage: Calculate percentage of time spent on problems, worries, obstacles (0-100)
+- solution_focus_percentage: Calculate percentage of time spent on solutions, actions, possibilities (0-100) 
+- shift_percentage: How much did thinking shift from problem to solution during session (0-100)
+- thinking_style_today: Identify dominant thinking pattern from: "Vision Mapper" (future-focused, "what if"), "Strategic Connector" (logical, step-by-step), "Creative Explorer" (innovative, unconventional), "Reflective Processor" (deep, contemplative)
+
 {
   "summary_before": "Brief summary of initial thoughts/problems",
   "summary_after": "Brief summary of insights/solutions found", 
-  "problem_focus_percentage": 60,
-  "solution_focus_percentage": 40,
-  "shift_percentage": 20,
-  "thinking_style_today": "analytical/creative/reflective",
-  "thinking_patterns": {"overthinking": 80, "solution_focused": 60},
+  "problem_focus_percentage": 0,
+  "solution_focus_percentage": 0,
+  "shift_percentage": 0,
+  "thinking_style_today": "Vision Mapper|Strategic Connector|Creative Explorer|Reflective Processor",
+  "thinking_patterns": {"overthinking": 0, "solution_focused": 0, "future_thinking": 0},
   "best_ideas": ["insight 1", "insight 2"],
   "strength_highlight": "key strength shown",
   "positive_quotes": ["motivating quote from transcript"],

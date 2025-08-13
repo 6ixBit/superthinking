@@ -408,6 +408,220 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     return stored ?? _record?.transcript ?? widget.initialTranscript;
   }
 
+  Widget _buildShiftScoreSection() {
+    if (_record?.analysis == null) return const SizedBox.shrink();
+
+    final analysis = _record!.analysis!;
+    final shiftScore = analysis.shiftPercentage;
+    final problemFocus = analysis.problemFocusPercentage;
+    final solutionFocus = analysis.solutionFocusPercentage;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Attributes',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 16),
+
+        // Progress visualization
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.red.withOpacity(0.1),
+                Colors.amber.withOpacity(0.1),
+                Colors.green.withOpacity(0.1),
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withOpacity(0.2), width: 1),
+          ),
+          child: Column(
+            children: [
+              // Progress bars
+              _buildProgressBar(
+                'Problem-focused',
+                problemFocus,
+                Colors.red.shade400,
+              ),
+              const SizedBox(height: 12),
+              _buildProgressBar(
+                'Solution-focused',
+                solutionFocus,
+                Colors.green.shade400,
+              ),
+              const SizedBox(height: 12),
+              _buildProgressBar(
+                'Thinking shift',
+                shiftScore,
+                AppColors.primary,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgressBar(String label, int percentage, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+            ),
+            Text(
+              '$percentage%',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 8,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: percentage / 100,
+            child: Container(
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThinkingStyleBadge() {
+    if (_record?.analysis == null) return const SizedBox.shrink();
+
+    final thinkingStyle = _record!.analysis!.thinkingStyleToday;
+    final styleInfo = _getThinkingStyleInfo(thinkingStyle);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Thinking Style',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: styleInfo['color'].withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: styleInfo['color'].withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: styleInfo['color'],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(styleInfo['icon'], color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      styleInfo['name'],
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: styleInfo['color'],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      styleInfo['description'],
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.black87),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Map<String, dynamic> _getThinkingStyleInfo(String style) {
+    switch (style.toLowerCase()) {
+      case 'vision mapper':
+        return {
+          'name': 'Vision Mapper',
+          'description':
+              'Great at imagining possibilities and exploring "what if" scenarios',
+          'color': Colors.purple.shade600,
+          'icon': Icons.visibility_outlined,
+        };
+      case 'strategic connector':
+        return {
+          'name': 'Strategic Connector',
+          'description':
+              'Logical and methodical, excelling at step-by-step planning',
+          'color': Colors.blue.shade600,
+          'icon': Icons.account_tree_outlined,
+        };
+      case 'creative explorer':
+        return {
+          'name': 'Creative Explorer',
+          'description':
+              'Innovative and unconventional, finding unique solutions',
+          'color': Colors.orange.shade600,
+          'icon': Icons.lightbulb_outline,
+        };
+      case 'reflective processor':
+        return {
+          'name': 'Reflective Processor',
+          'description':
+              'Deep and contemplative, processing complex thoughts thoroughly',
+          'color': Colors.teal.shade600,
+          'icon': Icons.psychology_outlined,
+        };
+      default:
+        return {
+          'name': 'Balanced Thinker',
+          'description': 'Adapting thinking style based on the situation',
+          'color': Colors.grey.shade600,
+          'icon': Icons.balance_outlined,
+        };
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final duration =
@@ -509,6 +723,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Thinking Style Badge
+                    if (_record?.analysis != null) ...[
+                      _buildThinkingStyleBadge(),
+                      const SizedBox(height: 24),
+                    ],
+
                     // Transcript section
                     if (transcript != null && transcript.isNotEmpty) ...[
                       Text(
@@ -727,34 +947,51 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         ),
                       ],
                     ],
+
+                    // Attributes and Progress Visualization
+                    if (_record!.analysis != null) ...[
+                      const SizedBox(height: 32),
+                      _buildShiftScoreSection(),
+                    ],
                   ],
                 ),
               ),
             ],
           );
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          content,
-          // Subtle confetti overlay when completing a step
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: _confetti,
-              blastDirectionality: BlastDirectionality.explosive,
-              emissionFrequency: 0.0,
-              numberOfParticles: 18,
-              gravity: 0.6,
-              colors: const [
-                AppColors.primary,
-                Colors.blueAccent,
-                Colors.orange,
-                Colors.green,
-              ],
+    return WillPopScope(
+      onWillPop: () async {
+        // Handle back gesture the same way as close button
+        final app = context.read<AppState>();
+        if (app.openSessionId != null) {
+          app.setOpenSession(null);
+          return false; // Prevent default back navigation
+        }
+        return true; // Allow normal back navigation
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            content,
+            // Subtle confetti overlay when completing a step
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confetti,
+                blastDirectionality: BlastDirectionality.explosive,
+                emissionFrequency: 0.0,
+                numberOfParticles: 18,
+                gravity: 0.6,
+                colors: const [
+                  AppColors.primary,
+                  Colors.blueAccent,
+                  Colors.orange,
+                  Colors.green,
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
