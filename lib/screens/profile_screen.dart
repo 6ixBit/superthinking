@@ -215,7 +215,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               padding: const EdgeInsets.only(left: 8),
                               child: Text(
                                 'Daily actions completed',
-                                style: Theme.of(context).textTheme.bodyMedium,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                             ),
                           ],
