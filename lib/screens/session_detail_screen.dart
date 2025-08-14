@@ -239,6 +239,73 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     }
   }
 
+  Future<void> _deleteActionItem(int index) async {
+    if (_record == null || index >= _record!.actions.length) return;
+
+    final action = _record!.actions[index];
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete action?'),
+        content: Text(
+          'Are you sure you want to delete this action: "${action.description}"?',
+          style: const TextStyle(color: Colors.red),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final ok = await SessionApi.deleteActionItem(actionItemId: action.id);
+      if (ok) {
+        setState(() {
+          _record = SessionRecord(
+            id: _record!.id,
+            createdAt: _record!.createdAt,
+            durationSeconds: _record!.durationSeconds,
+            ideas: _record!.ideas,
+            actions: List.from(_record!.actions)..removeAt(index),
+            transcript: _record!.transcript,
+            processingStatus: _record!.processingStatus,
+            analysis: _record!.analysis,
+            title: _record!.title,
+          );
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Action item deleted'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete action item')),
+          );
+        }
+      }
+    } catch (e) {
+      print('[SessionDetail] Error deleting action item: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete action item')),
+        );
+      }
+    }
+  }
+
   bool _shouldTruncateTranscript(String text) {
     // Count approximate lines by counting characters
     // Roughly 50-60 characters per line on mobile
@@ -471,6 +538,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
         ),
+        const SizedBox(height: 8),
+        // Single guidance line based on strongest signal (problem/solution/shift)
+        Text(
+          _buildTopInsight(problemFocus, solutionFocus, shiftScore),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.black54, height: 1.35),
+        ),
         const SizedBox(height: 16),
 
         // Progress visualization
@@ -513,6 +588,46 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         ),
       ],
     );
+  }
+
+  String _buildAttributesInsight(int problemFocus, int solutionFocus) {
+    // Provide gentle, expert guidance for overthinking patterns
+    if (problemFocus >= solutionFocus + 10) {
+      return "You were really anchored in the problem today — that makes sense when something feels heavy. Let’s honor the weight of it, and gently shift one small step toward what’s in your control.";
+    }
+    if (solutionFocus >= problemFocus + 10) {
+      return "Your thinking leaned solution‑focused — great momentum. Consider marking one clear next action you can do in 5–10 minutes to keep the energy moving.";
+    }
+    return "You showed a healthy balance — seeing both the friction and the path forward. A small, kind step now can translate clarity into momentum.";
+  }
+
+  String _buildShiftChangeInsight(int shiftPercentage) {
+    if (shiftPercentage >= 80) {
+      return "A powerful reframe — you moved from weight to wisdom. Notice what unlocked that shift and bookmark it for future sessions.";
+    }
+    if (shiftPercentage >= 50) {
+      return "A strong pivot toward solutions — your ideas opened up. Capture one takeaway you want to act on this week.";
+    }
+    if (shiftPercentage >= 20) {
+      return "You nudged things forward — even small shifts matter. Keep the thread by choosing one gentle next step.";
+    }
+    return "Today was more about naming the problem — that’s valid. When you’re ready, we’ll look for one tiny lever you can move.";
+  }
+
+  String _buildTopInsight(
+    int problemFocus,
+    int solutionFocus,
+    int shiftPercentage,
+  ) {
+    final top = [
+      problemFocus,
+      solutionFocus,
+      shiftPercentage,
+    ].reduce((a, b) => a > b ? a : b);
+    if (top == shiftPercentage) {
+      return _buildShiftChangeInsight(shiftPercentage);
+    }
+    return _buildAttributesInsight(problemFocus, solutionFocus);
   }
 
   Widget _buildProgressBar(String label, int percentage, Color color) {
@@ -691,7 +806,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         // Header section with close button and session title
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -729,9 +844,72 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       onSelected: (value) async {
                         if (value == 'delete') {
                           await _confirmAndDelete();
+                        } else if (value == 'edit_title') {
+                          if (_record == null) return;
+                          final controller = TextEditingController(
+                            text: _record!.title ?? '',
+                          );
+                          final newTitle = await showDialog<String>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Edit title'),
+                              content: TextField(
+                                controller: controller,
+                                autofocus: true,
+                                textInputAction: TextInputAction.done,
+                                decoration: const InputDecoration(
+                                  hintText: 'Session title',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(
+                                    ctx,
+                                  ).pop(controller.text.trim()),
+                                  child: const Text('Save'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (newTitle == null) return;
+                          final trimmed = newTitle.trim();
+                          if (trimmed.isEmpty) return;
+                          final ok = await SessionApi.updateSessionTitle(
+                            sessionId: _record!.id,
+                            title: trimmed,
+                          );
+                          if (ok && mounted) {
+                            setState(() {
+                              _record = SessionRecord(
+                                id: _record!.id,
+                                createdAt: _record!.createdAt,
+                                durationSeconds: _record!.durationSeconds,
+                                ideas: _record!.ideas,
+                                actions: _record!.actions,
+                                transcript: _record!.transcript,
+                                processingStatus: _record!.processingStatus,
+                                analysis: _record!.analysis,
+                                title: trimmed,
+                              );
+                            });
+                          }
                         }
                       },
                       itemBuilder: (ctx) => [
+                        PopupMenuItem(
+                          value: 'edit_title',
+                          child: Row(
+                            children: const [
+                              Icon(Icons.edit_outlined),
+                              SizedBox(width: 8),
+                              Text('Edit title'),
+                            ],
+                          ),
+                        ),
                         PopupMenuItem(
                           value: 'delete',
                           child: Row(
@@ -838,11 +1016,71 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               ],
 
               // Next Steps section
-              Text(
-                'Next Steps',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Your next steps',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    tooltip: 'Add action',
+                    onPressed: () async {
+                      if (_record == null) return;
+                      final controller = TextEditingController();
+                      final added = await showDialog<String>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('New action'),
+                          content: TextField(
+                            controller: controller,
+                            autofocus: true,
+                            decoration: const InputDecoration(
+                              hintText: 'Describe a small next step…',
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(ctx).pop(controller.text.trim()),
+                              child: const Text('Add'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (added == null || added.isEmpty) return;
+                      final newItem = await SessionApi.createActionItem(
+                        sessionId: _record!.id,
+                        description: added,
+                        source: 'user_stated',
+                        priority: 'medium',
+                      );
+                      if (newItem != null && mounted) {
+                        setState(() {
+                          _record = SessionRecord(
+                            id: _record!.id,
+                            createdAt: _record!.createdAt,
+                            durationSeconds: _record!.durationSeconds,
+                            ideas: _record!.ideas,
+                            actions: [..._record!.actions, newItem],
+                            transcript: _record!.transcript,
+                            processingStatus: _record!.processingStatus,
+                            analysis: _record!.analysis,
+                            title: _record!.title,
+                          );
+                        });
+                      }
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               if (_record != null && _record!.actions.isNotEmpty) ...[
@@ -851,39 +1089,69 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   final done = _completed.contains(i);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => _toggleStep(i),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 8,
+                    child: Dismissible(
+                      key: Key('action_${action.id}'),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              done ? Icons.check_circle : Icons.circle_outlined,
-                              color: done ? AppColors.primary : Colors.black26,
-                              size: 22,
+                        child: const Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      onDismissed: (direction) async {
+                        await _deleteActionItem(i);
+                      },
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _toggleStep(i),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 8,
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                action.description,
-                                style: Theme.of(context).textTheme.bodyLarge
-                                    ?.copyWith(
-                                      decoration: done
-                                          ? TextDecoration.lineThrough
-                                          : TextDecoration.none,
-                                      color: done
-                                          ? Colors.black45
-                                          : Colors.black87,
-                                      decorationThickness: 2,
-                                    ),
-                              ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  done
+                                      ? Icons.check_circle
+                                      : Icons.circle_outlined,
+                                  color: done
+                                      ? AppColors.primary
+                                      : Colors.black26,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    action.description,
+                                    style: Theme.of(context).textTheme.bodyLarge
+                                        ?.copyWith(
+                                          decoration: done
+                                              ? TextDecoration.lineThrough
+                                              : TextDecoration.none,
+                                          color: done
+                                              ? Colors.black45
+                                              : Colors.black87,
+                                          decorationThickness: 2,
+                                        ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -896,6 +1164,11 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
                 ),
+              ],
+
+              if (_record?.analysis != null) ...[
+                const SizedBox(height: 32),
+                _buildShiftScoreSection(),
               ],
 
               const SizedBox(height: 40),
@@ -1014,12 +1287,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     ),
                   ),
                 ],
-              ],
-
-              // Attributes and Progress Visualization
-              if (_record!.analysis != null) ...[
-                const SizedBox(height: 32),
-                _buildShiftScoreSection(),
               ],
             ],
           ),

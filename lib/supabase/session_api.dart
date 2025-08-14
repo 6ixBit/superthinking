@@ -314,4 +314,79 @@ class SessionApi {
       return false;
     }
   }
+
+  static Future<ActionItem?> createActionItem({
+    required String sessionId,
+    required String description,
+    String? category,
+    String priority = 'medium',
+    String source = 'user_stated',
+  }) async {
+    try {
+      final client = SupabaseService.client;
+      final user = client.auth.currentUser;
+      if (user == null) return null;
+
+      final res = await client
+          .from('action_items')
+          .insert({
+            'session_id': sessionId,
+            'description': description,
+            'category': category,
+            'priority': priority,
+            'source': source,
+            'status': 'pending',
+          })
+          .select('id, description, category, priority, source, status')
+          .maybeSingle();
+
+      if (res == null) return null;
+      return ActionItem(
+        id: res['id'] as String,
+        description: res['description'] as String,
+        category: res['category'] as String?,
+        priority: res['priority'] as String? ?? 'medium',
+        source: res['source'] as String? ?? 'user_stated',
+        status: res['status'] as String? ?? 'pending',
+      );
+    } catch (e) {
+      print('Error creating action item: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> updateSessionTitle({
+    required String sessionId,
+    required String title,
+  }) async {
+    try {
+      final client = SupabaseService.client;
+      final user = client.auth.currentUser;
+      if (user == null) return false;
+
+      await client
+          .from('sessions')
+          .update({'title': title})
+          .eq('id', sessionId)
+          .eq('user_id', user.id);
+      return true;
+    } catch (e) {
+      print('Error updating session title: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> deleteActionItem({required String actionItemId}) async {
+    try {
+      final client = SupabaseService.client;
+      final user = client.auth.currentUser;
+      if (user == null) return false;
+
+      await client.from('action_items').delete().eq('id', actionItemId);
+      return true;
+    } catch (e) {
+      print('Error deleting action item: $e');
+      return false;
+    }
+  }
 }

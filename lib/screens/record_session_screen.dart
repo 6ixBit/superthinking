@@ -520,5 +520,3 @@ class _AuroraPainter extends CustomPainter {
     return oldDelegate.timeSec != timeSec;
   }
 }
-
-// Removed temporary placeholder screen; we navigate straight to LoadingSessionScreen
