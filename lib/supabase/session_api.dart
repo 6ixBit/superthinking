@@ -13,6 +13,8 @@ class SessionRecord {
   processingStatus; // 'pending', 'processing', 'completed', 'failed'
   final SessionAnalysis? analysis;
   final String? title; // AI-generated session title
+  final int totalActionItems;
+  final int completedActionItems;
 
   SessionRecord({
     required this.id,
@@ -24,6 +26,8 @@ class SessionRecord {
     this.processingStatus,
     this.analysis,
     this.title,
+    this.totalActionItems = 0,
+    this.completedActionItems = 0,
   });
 }
 
@@ -104,7 +108,7 @@ class SessionApi {
 
     final actionsFuture = client
         .from('action_items')
-        .select('session_id, description')
+        .select('session_id, status')
         .filter(
           'session_id',
           'in',
@@ -128,12 +132,16 @@ class SessionApi {
       sessionIdToIdeas[sid] = ideas;
     }
 
-    final Map<String, List<String>> sessionIdToActions = {};
+    final Map<String, int> sessionIdToTotalActions = {};
+    final Map<String, int> sessionIdToCompletedActions = {};
     for (final row in actionRows) {
       final sid = row['session_id'] as String;
-      final desc = row['description'] as String?;
-      if (desc == null) continue;
-      sessionIdToActions.putIfAbsent(sid, () => <String>[]).add(desc);
+      final status = (row['status'] as String?) ?? 'pending';
+      sessionIdToTotalActions[sid] = (sessionIdToTotalActions[sid] ?? 0) + 1;
+      if (status == 'completed') {
+        sessionIdToCompletedActions[sid] =
+            (sessionIdToCompletedActions[sid] ?? 0) + 1;
+      }
     }
 
     return sessionRows.map((r) {
@@ -143,19 +151,8 @@ class SessionApi {
       final processingStatus = r['processing_status'] as String?;
       final title = r['title'] as String?;
 
-      // Convert string actions to ActionItem objects for display
-      final actionStrings = sessionIdToActions[id] ?? const <String>[];
-      final actionItems = actionStrings
-          .map(
-            (desc) => ActionItem(
-              id: '', // We don't need the ID for the summary view
-              description: desc,
-              priority: 'medium',
-              source: 'ai_suggested',
-              status: 'pending',
-            ),
-          )
-          .toList();
+      // Summary view: we only need counts; leave actions empty
+      final actionItems = <ActionItem>[];
 
       return SessionRecord(
         id: id,
@@ -165,6 +162,8 @@ class SessionApi {
         actions: actionItems,
         processingStatus: processingStatus,
         title: title,
+        totalActionItems: sessionIdToTotalActions[id] ?? 0,
+        completedActionItems: sessionIdToCompletedActions[id] ?? 0,
       );
     }).toList();
   }

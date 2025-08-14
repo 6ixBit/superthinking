@@ -806,7 +806,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(
             10,
-            50,
+            75,
             10,
             0,
           ), // Added top padding for status bar
@@ -835,8 +835,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     child: Text(
                       _record?.title ?? 'Session Summary',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

@@ -9,6 +9,8 @@ class Session {
   final List<String> actions;
   final String strength;
   final int? durationSeconds;
+  final int totalActions;
+  final int completedActions;
 
   Session({
     required this.id,
@@ -18,6 +20,8 @@ class Session {
     required this.actions,
     required this.strength,
     this.durationSeconds,
+    this.totalActions = 0,
+    this.completedActions = 0,
   });
 }
 
@@ -120,6 +124,8 @@ class AppState extends ChangeNotifier {
                   .toList(), // Convert ActionItem to String
               strength: '',
               durationSeconds: r.durationSeconds,
+              totalActions: r.totalActionItems,
+              completedActions: r.completedActionItems,
             ),
           ),
         );

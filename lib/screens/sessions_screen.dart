@@ -276,7 +276,9 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                         size: 16,
                                       ),
                                       label: 'Actions',
-                                      value: s.actions.length,
+                                      value: 0,
+                                      valueText:
+                                          '${s.completedActions}/${s.totalActions}',
                                     ),
                                   ],
                                 ),
@@ -298,10 +300,12 @@ class _StatPill extends StatelessWidget {
   final Widget icon;
   final String label;
   final int value;
+  final String? valueText;
   const _StatPill({
     required this.icon,
     required this.label,
     required this.value,
+    this.valueText,
   });
 
   @override
@@ -317,7 +321,7 @@ class _StatPill extends StatelessWidget {
         children: [
           icon,
           const SizedBox(width: 6),
-          Text('$value'),
+          Text(valueText ?? '$value'),
           const SizedBox(width: 4),
           Text(label, style: Theme.of(context).textTheme.bodySmall),
         ],
