@@ -149,7 +149,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     if (!isRecording) return;
     print('[RecordSession] Stopping recording...');
     _recordTimer?.cancel();
-    setState(() => isRecording = false);
+    // Keep recording UI until we navigate to analyzing to avoid a flash
 
     if (_speech.isListening) {
       print('[RecordSession] Stopping speech recognition...');
@@ -218,16 +218,22 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       } else {
         print('[RecordSession] WARNING: No audio file path to upload');
       }
-      // Go to analyzing screen for this session while backend processes
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => LoadingSessionScreen(sessionId: sessionId),
-        ),
-      );
+      // Navigate directly to our existing analyzing screen for this session
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => LoadingSessionScreen(sessionId: sessionId),
+          ),
+        );
+      }
       return;
     } catch (e, stackTrace) {
       print('[RecordSession] ERROR creating session: $e');
       print('[RecordSession] Stack trace: $stackTrace');
+      // On error, go home
+      if (mounted) {
+        Navigator.of(context).pushNamed('/home');
+      }
     }
     if (!mounted) return;
     Navigator.of(context).pushNamed('/home');
@@ -514,3 +520,5 @@ class _AuroraPainter extends CustomPainter {
     return oldDelegate.timeSec != timeSec;
   }
 }
+
+// Removed temporary placeholder screen; we navigate straight to LoadingSessionScreen
