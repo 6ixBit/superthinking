@@ -79,4 +79,18 @@ class UserProfileApi {
     if (profile == null) return false;
     return (profile['onboarding_completed'] as bool?) ?? false;
   }
+
+  static Future<bool> deleteAccount() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return false;
+    try {
+      final resp = await _client.functions.invoke('delete-account');
+      if (resp.data is Map && (resp.data['status'] == 'ok')) {
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
 }
