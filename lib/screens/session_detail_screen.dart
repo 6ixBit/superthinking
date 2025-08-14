@@ -105,6 +105,56 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     });
   }
 
+  Future<void> _confirmAndDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete session?'),
+        content: Text(
+          'This will permanently delete this session and its insights.',
+          style: const TextStyle(color: Colors.red),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final ok = await SessionApi.deleteSession(widget.sessionId);
+      if (ok) {
+        final app = context.read<AppState>();
+        await app.deleteSession(widget.sessionId);
+        app.setOpenSession(null);
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Session deleted')));
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete session')),
+          );
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete session')),
+        );
+      }
+    }
+  }
+
   String _formatDuration(int seconds) {
     final m = (seconds ~/ 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
@@ -137,11 +187,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     final action = _record!.actions[index];
     final isCompleted = _completed.contains(index);
     final newStatus = isCompleted ? 'pending' : 'completed';
-
-    print('[SessionDetail] Toggling action $index: ${action.description}');
-    print('[SessionDetail] Action ID: ${action.id}');
-    print('[SessionDetail] Current status: ${action.status}');
-    print('[SessionDetail] New status: $newStatus');
 
     // Update local state immediately for responsive UI
     setState(() {
@@ -197,7 +242,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   bool _shouldTruncateTranscript(String text) {
     // Count approximate lines by counting characters
     // Roughly 50-60 characters per line on mobile
-    return text.length > 240; // ~4 lines worth of text
+    return text.length > 240;
   }
 
   String _getTruncatedTranscript(String text) {
@@ -206,7 +251,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     }
 
     // Find a good break point around 4 lines (240 chars)
-    int breakPoint = 240;
+    int breakPoint = 140;
     if (text.length > breakPoint) {
       // Try to break at a sentence or word boundary
       int lastPeriod = text.lastIndexOf('.', breakPoint);
@@ -252,16 +297,16 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       },
                       tooltip: 'Close',
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _record?.title ?? 'Processing Session...',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                    // const SizedBox(width: 8),
+                    // Expanded(
+                    //   child: Text(
+                    //     _record?.title ?? 'Processing Session...',
+                    //     textAlign: TextAlign.center,
+                    //     style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    //       fontWeight: FontWeight.w700,
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -646,7 +691,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         // Header section with close button and session title
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -677,42 +722,35 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Date and duration stacked tightly
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.mic_none_rounded,
-                          color: Colors.black54,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _formatSessionDate(_record?.createdAt),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.timer_outlined,
-                          size: 18,
-                          color: Colors.black54,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _formatDuration(duration),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.black54),
+                    PopupMenuButton<String>(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onSelected: (value) async {
+                        if (value == 'delete') {
+                          await _confirmAndDelete();
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Delete session',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: 'Options',
                     ),
                   ],
                 ),
@@ -726,6 +764,37 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Date and duration just above thinking style
+              Row(
+                children: [
+                  const Icon(Icons.mic_none_rounded, color: Colors.black54),
+                  const SizedBox(width: 8),
+                  Text(
+                    _formatSessionDate(_record?.createdAt),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.timer_outlined,
+                    size: 18,
+                    color: Colors.black54,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatDuration(duration),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
               // Thinking Style Badge
               if (_record?.analysis != null) ...[
                 _buildThinkingStyleBadge(),
@@ -742,7 +811,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _getTruncatedTranscript(transcript),
+                  '“${_getTruncatedTranscript(transcript)}”',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.black54,
                     height: 1.35,
@@ -880,11 +949,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 const SizedBox(height: 12),
                 if (_record!.analysis!.summaryAfter.isNotEmpty) ...[
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.05),
+                      color: Colors.green.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withOpacity(0.1)),
+                      border: Border.all(
+                        color: Colors.green.withValues(alpha: 0.1),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -911,12 +983,13 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 ],
                 if (_record!.analysis!.strengthHighlight.isNotEmpty) ...[
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.05),
+                      color: AppColors.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Column(
