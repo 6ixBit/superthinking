@@ -799,141 +799,140 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // Do not redirect to analyzing screen from here; render what we have
     final content = ListView(
       padding: EdgeInsets.zero,
       children: [
         // Header section with close button and session title
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Close button and title row
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () {
-                        final app = context.read<AppState>();
-                        if (app.openSessionId != null) {
-                          app.setOpenSession(null);
-                          return;
-                        }
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      tooltip: 'Close',
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _record?.title ?? 'Session Summary',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            10,
+            50,
+            10,
+            0,
+          ), // Added top padding for status bar
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Close button and title row
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () {
+                      final app = context.read<AppState>();
+                      if (app.openSessionId != null) {
+                        app.setOpenSession(null);
+                        return;
+                      }
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    tooltip: 'Close',
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _record?.title ?? 'Session Summary',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    PopupMenuButton<String>(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      onSelected: (value) async {
-                        if (value == 'delete') {
-                          await _confirmAndDelete();
-                        } else if (value == 'edit_title') {
-                          if (_record == null) return;
-                          final controller = TextEditingController(
-                            text: _record!.title ?? '',
-                          );
-                          final newTitle = await showDialog<String>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Edit title'),
-                              content: TextField(
-                                controller: controller,
-                                autofocus: true,
-                                textInputAction: TextInputAction.done,
-                                decoration: const InputDecoration(
-                                  hintText: 'Session title',
-                                ),
+                  ),
+                  PopupMenuButton<String>(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    onSelected: (value) async {
+                      if (value == 'delete') {
+                        await _confirmAndDelete();
+                      } else if (value == 'edit_title') {
+                        if (_record == null) return;
+                        final controller = TextEditingController(
+                          text: _record!.title ?? '',
+                        );
+                        final newTitle = await showDialog<String>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Edit title'),
+                            content: TextField(
+                              controller: controller,
+                              autofocus: true,
+                              textInputAction: TextInputAction.done,
+                              decoration: const InputDecoration(
+                                hintText: 'Session title',
                               ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(
-                                    ctx,
-                                  ).pop(controller.text.trim()),
-                                  child: const Text('Save'),
-                                ),
-                              ],
                             ),
-                          );
-                          if (newTitle == null) return;
-                          final trimmed = newTitle.trim();
-                          if (trimmed.isEmpty) return;
-                          final ok = await SessionApi.updateSessionTitle(
-                            sessionId: _record!.id,
-                            title: trimmed,
-                          );
-                          if (ok && mounted) {
-                            setState(() {
-                              _record = SessionRecord(
-                                id: _record!.id,
-                                createdAt: _record!.createdAt,
-                                durationSeconds: _record!.durationSeconds,
-                                ideas: _record!.ideas,
-                                actions: _record!.actions,
-                                transcript: _record!.transcript,
-                                processingStatus: _record!.processingStatus,
-                                analysis: _record!.analysis,
-                                title: trimmed,
-                              );
-                            });
-                          }
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(
+                                  ctx,
+                                ).pop(controller.text.trim()),
+                                child: const Text('Save'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (newTitle == null) return;
+                        final trimmed = newTitle.trim();
+                        if (trimmed.isEmpty) return;
+                        final ok = await SessionApi.updateSessionTitle(
+                          sessionId: _record!.id,
+                          title: trimmed,
+                        );
+                        if (ok && mounted) {
+                          setState(() {
+                            _record = SessionRecord(
+                              id: _record!.id,
+                              createdAt: _record!.createdAt,
+                              durationSeconds: _record!.durationSeconds,
+                              ideas: _record!.ideas,
+                              actions: _record!.actions,
+                              transcript: _record!.transcript,
+                              processingStatus: _record!.processingStatus,
+                              analysis: _record!.analysis,
+                              title: trimmed,
+                            );
+                          });
                         }
-                      },
-                      itemBuilder: (ctx) => [
-                        PopupMenuItem(
-                          value: 'edit_title',
-                          child: Row(
-                            children: const [
-                              Icon(Icons.edit_outlined),
-                              SizedBox(width: 8),
-                              Text('Edit title'),
-                            ],
-                          ),
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      PopupMenuItem(
+                        value: 'edit_title',
+                        child: Row(
+                          children: const [
+                            Icon(Icons.edit_outlined),
+                            SizedBox(width: 8),
+                            Text('Edit title'),
+                          ],
                         ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Delete session',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ],
-                          ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.delete_outline, color: Colors.red),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Delete session',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ],
                         ),
-                      ],
-                      icon: const Icon(Icons.more_vert),
-                      tooltip: 'Options',
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                      ),
+                    ],
+                    icon: const Icon(Icons.more_vert),
+                    tooltip: 'Options',
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         // Rest of content with padding and bottom spacing to avoid nav overlap
