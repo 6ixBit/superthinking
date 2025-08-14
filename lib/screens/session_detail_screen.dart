@@ -536,7 +536,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           'Attributes',
           style: Theme.of(
             context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         // Single guidance line based on strongest signal (problem/solution/shift)
@@ -937,15 +937,18 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         ),
         // Rest of content with padding and bottom spacing to avoid nav overlap
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+          padding: const EdgeInsets.fromLTRB(20, 30, 20, 96),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Date and duration just above thinking style
               Row(
                 children: [
-                  const Icon(Icons.mic_none_rounded, color: Colors.black54),
-                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    color: Colors.black54,
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     _formatSessionDate(_record?.createdAt),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1117,8 +1120,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 8,
+                              horizontal: 12,
+                              vertical: 12,
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
