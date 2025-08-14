@@ -930,22 +930,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               Row(
                 children: [
                   const Icon(
-                    Icons.calendar_today_outlined,
-                    color: Colors.black54,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _formatSessionDate(_record?.createdAt),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(
                     Icons.timer_outlined,
                     size: 18,
                     color: Colors.black54,
@@ -953,6 +937,22 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   const SizedBox(width: 6),
                   Text(
                     _formatDuration(duration),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    color: Colors.black54,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatSessionDate(_record?.createdAt),
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: Colors.black54),

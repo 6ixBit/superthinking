@@ -83,13 +83,30 @@ class _SessionsScreenState extends State<SessionsScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Sessions',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 22,
+                            RichText(
+                              text: TextSpan(
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 22,
+                                      color: Theme.of(
+                                        context,
+                                      ).textTheme.titleLarge?.color,
+                                    ),
+                                children: [
+                                  const TextSpan(text: 'Sessions'),
+                                  TextSpan(
+                                    text: ' • ${sessions.length}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
                                   ),
+                                ],
+                              ),
                             ),
                             Stack(
                               clipBehavior: Clip.none,
