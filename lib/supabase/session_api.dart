@@ -389,4 +389,71 @@ class SessionApi {
       return false;
     }
   }
+
+  static Future<int> countCompletedActionItemsForCurrentUser() async {
+    final client = SupabaseService.client;
+    final user = client.auth.currentUser;
+    if (user == null) return 0;
+
+    // Get all session IDs for this user
+    final sessionsRes = await client
+        .from('sessions')
+        .select('id')
+        .eq('user_id', user.id);
+
+    if (sessionsRes is! List || sessionsRes.isEmpty) return 0;
+    final sessionIds = <String>[];
+    for (final row in sessionsRes) {
+      final id = row['id'] as String?;
+      if (id != null) sessionIds.add(id);
+    }
+    if (sessionIds.isEmpty) return 0;
+
+    // Count completed action items across these sessions
+    final actionRows = await client
+        .from('action_items')
+        .select('id')
+        .filter(
+          'session_id',
+          'in',
+          '(${sessionIds.map((e) => '"$e"').join(',')})',
+        )
+        .eq('status', 'completed');
+
+    if (actionRows is! List) return 0;
+    return actionRows.length;
+  }
+
+  static Future<int> countTotalActionItemsForCurrentUser() async {
+    final client = SupabaseService.client;
+    final user = client.auth.currentUser;
+    if (user == null) return 0;
+
+    // Get all session IDs for this user
+    final sessionsRes = await client
+        .from('sessions')
+        .select('id')
+        .eq('user_id', user.id);
+
+    if (sessionsRes is! List || sessionsRes.isEmpty) return 0;
+    final sessionIds = <String>[];
+    for (final row in sessionsRes) {
+      final id = row['id'] as String?;
+      if (id != null) sessionIds.add(id);
+    }
+    if (sessionIds.isEmpty) return 0;
+
+    // Count all action items across these sessions
+    final actionRows = await client
+        .from('action_items')
+        .select('id')
+        .filter(
+          'session_id',
+          'in',
+          '(${sessionIds.map((e) => '"$e"').join(',')})',
+        );
+
+    if (actionRows is! List) return 0;
+    return actionRows.length;
+  }
 }

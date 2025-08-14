@@ -17,6 +17,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   int _streak = 0;
   int _totalSessions = 0;
+  int _totalCompletedActions = 0;
+  int _totalActions = 0;
   bool _loading = true;
 
   int _computeCurrentStreakDaysFromDates(Iterable<DateTime> sessionDates) {
@@ -67,7 +69,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _streak = streak;
         _totalSessions = totalSessions;
+        _totalCompletedActions = 0; // will populate below
+        _totalActions = 0;
       });
+
+      // Fetch total completed actions
+      final completedActions =
+          await SessionApi.countCompletedActionItemsForCurrentUser();
+      final totalActions =
+          await SessionApi.countTotalActionItemsForCurrentUser();
+      if (mounted) {
+        setState(() {
+          _totalCompletedActions = completedActions;
+          _totalActions = totalActions;
+        });
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -100,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 80),
                   children: [
                     // Mascot and email
                     Column(
@@ -164,68 +180,111 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       totalSessions: _totalSessions,
                     ),
                     const SizedBox(height: 16),
-                    // Hero gradient card moved near the bottom
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primary.withOpacity(0.18),
-                            AppColors.secondary.withOpacity(0.18),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.12),
-                            blurRadius: 24,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.7),
-                            ),
-                            child: const Icon(
-                              CupertinoIcons.sparkles,
-                              size: 32,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                    // Completed Actions card (same style as streak badge)
+                    Card(
+                      margin: EdgeInsets.zero,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Number on top with icon on the right
+                            Row(
                               children: [
-                                Text(
-                                  'Supercharging your brain',
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 20,
-                                      ),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Text(
+                                    '${_totalCompletedActions}/${_totalActions}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Every SuperThinking session builds focus, optimism, and momentum.',
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(color: Colors.black87),
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.check_circle_outline,
+                                  color: Colors.green,
+                                  size: 24,
                                 ),
                               ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            // Text below with left padding
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Text(
+                                'Daily actions completed',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    // Hero gradient card moved near the bottom (temporarily hidden)
+                    // Container(
+                    //   padding: const EdgeInsets.all(20),
+                    //   decoration: BoxDecoration(
+                    //     borderRadius: BorderRadius.circular(24),
+                    //     gradient: LinearGradient(
+                    //       begin: Alignment.topLeft,
+                    //       end: Alignment.bottomRight,
+                    //       colors: [
+                    //         AppColors.primary.withOpacity(0.18),
+                    //         AppColors.secondary.withOpacity(0.18),
+                    //       ],
+                    //     ),
+                    //     boxShadow: [
+                    //       BoxShadow(
+                    //         color: AppColors.primary.withOpacity(0.12),
+                    //         blurRadius: 24,
+                    //         spreadRadius: 2,
+                    //         offset: const Offset(0, 8),
+                    //       ),
+                    //     ],
+                    //   ),
+                    //   child: Row(
+                    //     children: [
+                    //       Container(
+                    //         width: 64,
+                    //         height: 64,
+                    //         decoration: BoxDecoration(
+                    //           shape: BoxShape.circle,
+                    //           color: Colors.white.withOpacity(0.7),
+                    //         ),
+                    //         child: const Icon(
+                    //           CupertinoIcons.sparkles,
+                    //           size: 32,
+                    //           color: Colors.black87,
+                    //         ),
+                    //       ),
+                    //       const SizedBox(width: 16),
+                    //       Expanded(
+                    //         child: Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.start,
+                    //           children: [
+                    //             Text(
+                    //               'Supercharging your brain',
+                    //               style: Theme.of(context).textTheme.titleMedium
+                    //                   ?.copyWith(
+                    //                     fontWeight: FontWeight.w700,
+                    //                     fontSize: 20,
+                    //                   ),
+                    //             ),
+                    //             const SizedBox(height: 6),
+                    //             Text(
+                    //               'Every SuperThinking session builds focus, optimism, and momentum.',
+                    //               style: Theme.of(context).textTheme.bodyMedium
+                    //                   ?.copyWith(color: Colors.black87),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                     const SizedBox(height: 56),
                     // Logout button
                     OutlinedButton.icon(
