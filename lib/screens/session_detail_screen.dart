@@ -163,22 +163,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
   String _formatSessionDate(DateTime? createdAt) {
     if (createdAt == null) return '';
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final sessionDate = DateTime(
-      createdAt.year,
-      createdAt.month,
-      createdAt.day,
-    );
-
-    if (sessionDate == today) {
-      return 'Today';
-    } else if (sessionDate == today.subtract(const Duration(days: 1))) {
-      return 'Yesterday';
-    } else {
-      return DateFormat('MMM d').format(createdAt);
-    }
+    return DateFormat('EEE, MMM d • h:mm a').format(createdAt);
   }
 
   void _toggleStep(int index) async {
@@ -544,7 +529,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           _buildTopInsight(problemFocus, solutionFocus, shiftScore),
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: Colors.black54, height: 1.35),
+          ).textTheme.bodyMedium?.copyWith(color: Colors.black54, height: 1.35),
         ),
         const SizedBox(height: 16),
 
@@ -684,7 +669,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Thinking Style',
+          'How you think',
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -974,7 +959,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 36),
               // Thinking Style Badge
               if (_record?.analysis != null) ...[
                 _buildThinkingStyleBadge(),
