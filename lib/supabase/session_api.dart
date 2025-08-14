@@ -456,4 +456,55 @@ class SessionApi {
     if (actionRows is! List) return 0;
     return actionRows.length;
   }
+
+  static Future<String?> fetchDominantThinkingStyleForCurrentUser() async {
+    final client = SupabaseService.client;
+    final user = client.auth.currentUser;
+    if (user == null) return null;
+
+    // Get all session IDs for this user
+    final sessionsRes = await client
+        .from('sessions')
+        .select('id')
+        .eq('user_id', user.id);
+
+    if (sessionsRes is! List || sessionsRes.isEmpty) return null;
+    final sessionIds = <String>[];
+    for (final row in sessionsRes) {
+      final id = row['id'] as String?;
+      if (id != null) sessionIds.add(id);
+    }
+    if (sessionIds.isEmpty) return null;
+
+    // Fetch thinking styles for these sessions
+    final analysisRows = await client
+        .from('session_analysis')
+        .select('session_id, thinking_style_today')
+        .filter(
+          'session_id',
+          'in',
+          '(${sessionIds.map((e) => '"$e"').join(',')})',
+        );
+
+    if (analysisRows is! List || analysisRows.isEmpty) return null;
+
+    final Map<String, int> counts = {};
+    for (final row in analysisRows) {
+      final style = (row['thinking_style_today'] as String?)?.trim();
+      if (style == null || style.isEmpty) continue;
+      final key = style; // keep original casing as stored
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return null;
+
+    String topStyle = counts.entries.first.key;
+    int topCount = counts.entries.first.value;
+    counts.forEach((k, v) {
+      if (v > topCount) {
+        topStyle = k;
+        topCount = v;
+      }
+    });
+    return topStyle;
+  }
 }
