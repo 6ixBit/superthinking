@@ -62,6 +62,7 @@ class SessionAnalysis {
   final List<String> positiveQuotes;
   final List<String> resourcesMentioned;
   final int sessionDurationMinutes;
+  final String gentleAdvice;
 
   SessionAnalysis({
     required this.summaryBefore,
@@ -76,6 +77,7 @@ class SessionAnalysis {
     required this.positiveQuotes,
     required this.resourcesMentioned,
     required this.sessionDurationMinutes,
+    required this.gentleAdvice,
   });
 }
 
@@ -238,6 +240,7 @@ class SessionApi {
         ),
         sessionDurationMinutes:
             analysisRow['session_duration_minutes'] as int? ?? 0,
+        gentleAdvice: analysisRow['gentle_advice'] as String? ?? '',
       );
     }
 

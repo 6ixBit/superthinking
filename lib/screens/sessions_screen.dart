@@ -50,8 +50,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final sessions = app.sessions;
-    final computed = _computeCurrentStreakDays(sessions);
-    final streak = computed > 0 ? computed : _profileStreak;
+    final streak = _computeCurrentStreakDays(sessions);
 
     if (app.openSessionId != null) {
       return SessionDetailScreen(sessionId: app.openSessionId!);

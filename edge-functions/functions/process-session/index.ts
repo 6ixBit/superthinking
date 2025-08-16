@@ -161,6 +161,7 @@ ANALYSIS INSTRUCTIONS:
 - shift_percentage: How much did thinking shift from problem to solution during session (0-100)
 - thinking_style_today: Identify dominant thinking pattern from: "Vision Mapper" (future-focused, "what if"), "Strategic Connector" (logical, step-by-step), "Creative Explorer" (innovative, unconventional), "Reflective Processor" (deep, contemplative)
 - actions: ALWAYS include 1-3 specific, concise next steps. Each must have description, category, priority (low|medium|high), source (user_stated|ai_suggested).
+- gentle_advice: A short, kind, 1–3 line advice block tailored to the user's situation. Avoid cliches; focus on what is controllable, compassionate, and actionable without judgment.
 
 {
   "summary_before": "Brief summary of initial thoughts/problems",
@@ -177,6 +178,7 @@ ANALYSIS INSTRUCTIONS:
   "session_duration_minutes": ${Math.round(
     (sessionRow.duration_seconds ?? 0) / 60
   )},
+  "gentle_advice": "1–3 short lines of context-aware advice",
   "actions": [
     {
       "description": "specific action to take",
@@ -283,6 +285,7 @@ Return only valid JSON:`;
       session_duration_minutes:
         parsed.session_duration_minutes ||
         Math.round((sessionRow.duration_seconds ?? 0) / 60),
+      gentle_advice: parsed.gentle_advice || "",
     };
 
     const { error: upsertErr } = await supabase
