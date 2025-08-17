@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple;
 import 'package:crypto/crypto.dart' as crypto;
 import 'dart:convert' show utf8;
+import 'package:purchases_flutter/purchases_flutter.dart' as rc;
 
 import '../theme/app_colors.dart';
 import '../supabase/supabase_client.dart';
@@ -53,6 +54,31 @@ class _LoginScreenState extends State<LoginScreen> {
         debugPrint('[Auth] onAuthStateChange: $event');
         if (!mounted || _navigated) return;
         if (event == sb.AuthChangeEvent.signedIn) {
+          // Bind RevenueCat to the Supabase user id, then log offerings for verification
+          final user = SupabaseService.client.auth.currentUser;
+          final userId = user?.id;
+          (() async {
+            try {
+              if (userId != null && userId.isNotEmpty) {
+                debugPrint('[RC] Logging in to RevenueCat with userId=$userId');
+                await rc.Purchases.logIn(userId);
+                final offerings = await rc.Purchases.getOfferings();
+                final currentId = offerings.current?.identifier;
+                final pkgs =
+                    offerings.current?.availablePackages
+                        .map((p) => p.identifier)
+                        .toList() ??
+                    const [];
+                debugPrint('[RC] Offerings current=$currentId packages=$pkgs');
+              } else {
+                debugPrint(
+                  '[RC] Skipping logIn: Supabase user id not available',
+                );
+              }
+            } catch (e, st) {
+              debugPrint('[RC][Error] logIn/getOfferings failed: $e\n$st');
+            }
+          })();
           _navigated = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;

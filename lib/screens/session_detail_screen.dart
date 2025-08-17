@@ -630,10 +630,10 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'How you think',
+          'Today you are a ',
           style: Theme.of(
             context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
         Container(
@@ -887,26 +887,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Date and duration just above thinking style
-              // (removed duplicate date row)
-              // Gentle advice (if available)
-              if (_record?.analysis?.gentleAdvice != null &&
-                  _record!.analysis!.gentleAdvice.trim().isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Center(
-                    child: Text(
-                      _record!.analysis!.gentleAdvice,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.black87,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
               Row(
                 children: [
                   const Icon(
@@ -939,47 +919,28 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 24),
+              if (_record?.analysis?.gentleAdvice != null &&
+                  _record!.analysis!.gentleAdvice.trim().isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Center(
+                    child: Text(
+                      _record!.analysis!.gentleAdvice,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.black87,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
               // Thinking Style Badge
               if (_record?.analysis != null) ...[
                 _buildThinkingStyleBadge(),
                 const SizedBox(height: 24),
-              ],
-
-              // Transcript section
-              if (transcript != null && transcript.isNotEmpty) ...[
-                Text(
-                  'Your words',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '“${_getTruncatedTranscript(transcript)}”',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.black54,
-                    height: 1.35,
-                  ),
-                ),
-                if (_shouldTruncateTranscript(transcript)) ...[
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _transcriptExpanded = !_transcriptExpanded;
-                      });
-                    },
-                    child: Text(
-                      _transcriptExpanded ? 'Read less' : 'Read more',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 40),
               ],
 
               // Next Steps section
@@ -1140,44 +1101,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
               const SizedBox(height: 40),
 
-              // Standout ideas section (temporarily hidden)
-              // if (_record != null && _record!.ideas.isNotEmpty) ...[
-              //   Text(
-              //     'Standout ideas',
-              //     style: Theme.of(
-              //       context,
-              //     ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-              //   ),
-              //   const SizedBox(height: 12),
-              //   ...List.generate(_record!.ideas.length, (i) {
-              //     return Padding(
-              //       padding: const EdgeInsets.only(bottom: 8),
-              //       child: Row(
-              //         crossAxisAlignment: CrossAxisAlignment.start,
-              //         children: [
-              //           const Text(
-              //             '• ',
-              //             style: TextStyle(
-              //               fontSize: 16,
-              //               color: Colors.black54,
-              //               fontWeight: FontWeight.w500,
-              //             ),
-              //           ),
-              //           Expanded(
-              //             child: Text(
-              //               _record!.ideas[i],
-              //               style: Theme.of(
-              //                 context,
-              //               ).textTheme.bodyMedium?.copyWith(height: 1.35),
-              //             ),
-              //           ),
-              //         ],
-              //       ),
-              //     );
-              //   }),
-              //   const SizedBox(height: 24),
-              // ],
-
               // Analysis insights (if available)
               if (_record?.analysis != null) ...[
                 Text(
@@ -1251,6 +1174,42 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                           ).textTheme.bodyMedium?.copyWith(height: 1.35),
                         ),
                       ],
+                    ),
+                  ),
+                ],
+              ],
+
+              // Transcript section (moved to bottom)
+              if (transcript != null && transcript.isNotEmpty) ...[
+                const SizedBox(height: 40),
+                Text(
+                  'Your words',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '"${_getTruncatedTranscript(transcript)}"',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.black54,
+                    height: 1.35,
+                  ),
+                ),
+                if (_shouldTruncateTranscript(transcript)) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _transcriptExpanded = !_transcriptExpanded;
+                      });
+                    },
+                    child: Text(
+                      _transcriptExpanded ? 'Read less' : 'Read more',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
