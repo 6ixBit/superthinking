@@ -161,6 +161,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
         // Schedule notifications when session is completed
         NotificationManager.onSessionCompleted();
+
+        // Send notification for session analysis completion
+        NotificationManager.onSessionAnalysisComplete(widget.sessionId);
       }
     });
   }
@@ -175,9 +178,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         content: Text(
           'This will permanently delete this session and its insights.',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.black87,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.black87),
         ),
         actions: [
           TextButton(
@@ -302,7 +305,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         newStatus,
       );
       if (!success) {
-        print('[SessionDetail] Database update failed, reverting UI');
         // Revert local state if database update failed
         setState(() {
           if (isCompleted) {
@@ -321,15 +323,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           );
         }
       } else {
-        print('[SessionDetail] Database update successful');
-
         // Trigger notification manager when task is completed
         if (newStatus == 'completed') {
           NotificationManager.onTaskCompleted();
         }
       }
     } catch (e) {
-      print('[SessionDetail] Error updating action item: $e');
       // Revert local state on error
       setState(() {
         if (isCompleted) {
@@ -360,7 +359,10 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             ),
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.95),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
         ),
         actions: [
@@ -419,9 +421,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         content: Text(
           'Are you sure you want to delete this action: "${action.description}"?',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.black87,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.black87),
         ),
         actions: [
           TextButton(
@@ -483,7 +485,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         }
       }
     } catch (e) {
-      print('[SessionDetail] Error deleting action item: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to delete action item')),
@@ -687,12 +688,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         ),
         const SizedBox(height: 8),
         // Show personalized analysis if available, otherwise show chart only
-        if (analysis.attributeAnalysis != null && analysis.attributeAnalysis!.trim().isNotEmpty)
+        if (analysis.attributeAnalysis != null &&
+            analysis.attributeAnalysis!.trim().isNotEmpty)
           Text(
             analysis.attributeAnalysis!,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.black54, height: 1.35),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.black54,
+              height: 1.35,
+            ),
           ),
         const SizedBox(height: 16),
 
@@ -737,7 +740,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       ],
     );
   }
-
 
   Widget _buildProgressBar(String label, int percentage, Color color) {
     return Column(
@@ -794,9 +796,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       children: [
         Text(
           'Today you are a ',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
         Container(
@@ -977,14 +979,20 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                                 ),
                                 filled: true,
                                 fillColor: Colors.white.withValues(alpha: 0.95),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
                               ),
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.of(ctx).pop(),
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -992,11 +1000,16 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                                 child: const Text('Cancel'),
                               ),
                               ElevatedButton(
-                                onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+                                onPressed: () => Navigator.of(
+                                  ctx,
+                                ).pop(controller.text.trim()),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -1114,9 +1127,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    _ThoughtBubble(
-                      text: _record!.analysis!.gentleAdvice,
-                    ),
+                    _ThoughtBubble(text: _record!.analysis!.gentleAdvice),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -1454,10 +1465,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
 class _ThoughtBubble extends StatelessWidget {
   final String text;
-  
-  const _ThoughtBubble({
-    required this.text,
-  });
+
+  const _ThoughtBubble({required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -1558,14 +1567,16 @@ class _ThoughtBubbleClipper extends CustomClipper<Path> {
     final path = Path();
     final w = size.width;
     final h = size.height;
-    
+
     // Create main rounded rectangle only
     const radius = 20.0;
-    path.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, w, h),
-      const Radius.circular(radius),
-    ));
-    
+    path.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, w, h),
+        const Radius.circular(radius),
+      ),
+    );
+
     return path;
   }
 
@@ -1592,11 +1603,9 @@ class _StyledDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = primaryColor ?? AppColors.primary;
     final secondary = secondaryColor ?? AppColors.secondary;
-    
+
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
@@ -1628,23 +1637,23 @@ class _StyledDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 22,
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            content,
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: actions,
-            ),
-          ],
-        ),
+              const SizedBox(height: 16),
+              content,
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: actions,
+              ),
+            ],
+          ),
         ),
       ),
     );

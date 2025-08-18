@@ -137,6 +137,20 @@ class NotificationManager {
     }
   }
 
+  /// Called when session analysis is complete to notify user
+  static Future<void> onSessionAnalysisComplete(String sessionId) async {
+    try {
+      await NotificationService.scheduleSessionAnalysisNotification(sessionId);
+      print(
+        '[NotificationManager] Session analysis completion notification scheduled for session $sessionId',
+      );
+    } catch (e) {
+      print(
+        '[NotificationManager] Error scheduling session analysis notification: $e',
+      );
+    }
+  }
+
   /// Initialize notification service and schedule daily notifications
   static Future<void> initialize() async {
     try {
@@ -168,6 +182,22 @@ class NotificationManager {
       print('[NotificationManager] Test notification scheduled');
     } catch (e) {
       print('[NotificationManager] Error scheduling test notification: $e');
+    }
+  }
+
+  /// Test session analysis notification
+  static Future<void> testSessionAnalysisNotification() async {
+    try {
+      await NotificationService.scheduleSessionAnalysisNotification(
+        'test-session-id',
+      );
+      print(
+        '[NotificationManager] Test session analysis notification scheduled',
+      );
+    } catch (e) {
+      print(
+        '[NotificationManager] Error scheduling test session analysis notification: $e',
+      );
     }
   }
 }

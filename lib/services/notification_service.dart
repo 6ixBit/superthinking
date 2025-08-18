@@ -2,11 +2,25 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:math';
+import 'dart:async';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
+
+  // Stream controllers for notification events
+  static final StreamController<String?> _notificationTappedController =
+      StreamController<String?>.broadcast();
+  static final StreamController<String?>
+  _appLaunchedFromNotificationController =
+      StreamController<String?>.broadcast();
+
+  // Streams for listening to notification events
+  static Stream<String?> get onNotificationTapped =>
+      _notificationTappedController.stream;
+  static Stream<String?> get onAppLaunchedFromNotification =>
+      _appLaunchedFromNotificationController.stream;
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -29,7 +43,17 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _notifications.initialize(initSettings);
+    await _notifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        final payload = response.payload;
+        if (payload != null) {
+          _notificationTappedController.add(payload);
+          _appLaunchedFromNotificationController.add(payload);
+        }
+      },
+    );
+
     _initialized = true;
   }
 
@@ -207,6 +231,44 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  static Future<void> scheduleSessionAnalysisNotification(
+    String sessionId,
+  ) async {
+    if (!_initialized) await initialize();
+
+    // Schedule for immediate delivery (when user is away from app)
+    final scheduledTime = DateTime.now().add(const Duration(seconds: 1));
+    final id = _generateNotificationId('session_analysis_$sessionId');
+
+    await _notifications.zonedSchedule(
+      id,
+      'SuperThinking',
+      'Your session analysis is ready! Tap to see your insights and next steps.',
+      tz.TZDateTime.from(scheduledTime, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'session_analysis',
+          'Session Analysis',
+          channelDescription:
+              'Notifications when your session analysis is complete',
+          importance: Importance.high,
+          priority: Priority.high,
+          category: AndroidNotificationCategory.message,
+        ),
+        iOS: DarwinNotificationDetails(
+          categoryIdentifier: 'session_analysis',
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: sessionId, // Pass session ID as payload for navigation
     );
   }
 

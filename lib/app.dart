@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'state/app_state.dart';
 import 'theme/app_theme.dart';
@@ -24,6 +25,7 @@ import 'supabase/user_profile_api.dart';
 import 'supabase/supabase_client.dart';
 import 'screens/dev/dev_catalog_screen.dart';
 import 'screens/session_detail_screen.dart';
+import 'services/notification_service.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -37,8 +39,45 @@ class AppRoot extends StatelessWidget {
   }
 }
 
-class SuperThinkingApp extends StatelessWidget {
+class SuperThinkingApp extends StatefulWidget {
   const SuperThinkingApp({super.key});
+
+  @override
+  State<SuperThinkingApp> createState() => _SuperThinkingAppState();
+}
+
+class _SuperThinkingAppState extends State<SuperThinkingApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupNotificationHandling();
+  }
+
+  void _setupNotificationHandling() {
+    // Handle notification taps when app is in foreground
+    NotificationService.onNotificationTapped.listen((payload) {
+      if (payload != null) {
+        _navigateToSession(payload);
+      }
+    });
+
+    // Handle notification taps when app is launched from notification
+    NotificationService.onAppLaunchedFromNotification.listen((payload) {
+      if (payload != null) {
+        _navigateToSession(payload);
+      }
+    });
+  }
+
+  void _navigateToSession(String sessionId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _navigatorKey.currentState?.pushNamed('/session', arguments: sessionId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +85,7 @@ class SuperThinkingApp extends StatelessWidget {
       title: 'SuperThinking',
       theme: AppTheme.light(),
       debugShowCheckedModeBanner: false,
+      navigatorKey: _navigatorKey,
       initialRoute: '/splash',
       routes: {
         '/splash': (_) => const SplashScreen(),
