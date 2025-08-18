@@ -1117,12 +1117,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     _ThoughtBubble(
                       text: _record!.analysis!.gentleAdvice,
                     ),
-                    // Thought dots
-                    Positioned(
-                      bottom: -5,
-                      left: 20,
-                      child: _ThoughtDots(),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 32),
