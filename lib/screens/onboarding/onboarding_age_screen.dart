@@ -5,27 +5,23 @@ import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
 import '../../supabase/user_profile_api.dart';
 
-class OnboardingFrequencyScreen extends StatefulWidget {
-  const OnboardingFrequencyScreen({super.key});
+class OnboardingAgeScreen extends StatefulWidget {
+  const OnboardingAgeScreen({super.key});
 
   @override
-  State<OnboardingFrequencyScreen> createState() =>
-      _OnboardingFrequencyScreenState();
+  State<OnboardingAgeScreen> createState() => _OnboardingAgeScreenState();
 }
 
-class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
+class _OnboardingAgeScreenState extends State<OnboardingAgeScreen> {
   String? _selected;
-  final List<String> _options = const ['Rarely', 'Sometimes', 'Often'];
+  final List<String> _options = const ['18-21', '22-28', '29-40', '41+'];
 
-  void _onContinue() async {
+  Future<void> _onContinue() async {
     if (_selected == null) return;
-    context.read<AppState>().addQuickAnswer(_selected!);
-    await UserProfileApi.setOnboardingResponse(
-      'overthinking_frequency',
-      _selected,
-    );
+    context.read<AppState>().addQuickAnswer('Age range: ${_selected!}');
+    await UserProfileApi.setOnboardingResponse('age_range', _selected);
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/onboarding-focus');
+    Navigator.of(context).pushNamed('/onboarding-gender');
   }
 
   @override
@@ -34,7 +30,7 @@ class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 4, total: 6),
+        child: _OnboardingHeader(current: 2, total: 6),
       ),
       body: Stack(
         children: [
@@ -61,7 +57,7 @@ class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'How often do you overthink?',
+                            'Which age range do you fall under?',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
@@ -160,13 +156,7 @@ class _OnboardingHeader extends StatelessWidget {
         child: Row(
           children: [
             IconButton(
-              onPressed: () {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                } else {
-                  Navigator.of(context).pushReplacementNamed('/login');
-                }
-              },
+              onPressed: () => Navigator.of(context).maybePop(),
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
             ),
             Expanded(

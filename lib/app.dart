@@ -7,6 +7,8 @@ import 'screens/onboarding/welcome_screen.dart';
 import 'screens/quick_context_screen.dart';
 import 'screens/onboarding/onboarding_frequency_screen.dart';
 import 'screens/onboarding/onboarding_focus_screen.dart';
+import 'screens/onboarding/onboarding_age_screen.dart';
+import 'screens/onboarding/onboarding_gender_screen.dart';
 import 'screens/record_session_screen.dart';
 import 'screens/loading_reveal_screen.dart';
 import 'screens/reveal_screen.dart';
@@ -47,6 +49,8 @@ class SuperThinkingApp extends StatelessWidget {
         '/gate': (_) => const _AuthGate(),
         '/': (_) => const WelcomeScreen(),
         '/login': (_) => const LoginScreen(),
+        '/onboarding-age': (_) => const OnboardingAgeScreen(),
+        '/onboarding-gender': (_) => const OnboardingGenderScreen(),
         '/onboarding-frequency': (_) => const OnboardingFrequencyScreen(),
         '/onboarding-focus': (_) => const OnboardingFocusScreen(),
         '/quick': (_) => const QuickContextScreen(),
