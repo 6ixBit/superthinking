@@ -8,6 +8,7 @@ import 'package:confetti/confetti.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import '../services/notification_manager.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class SessionDetailScreen extends StatefulWidget {
   final String sessionId;
@@ -35,6 +36,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   bool _transcriptExpanded = false;
   Timer? _refreshTimer;
 
+  // Audio player
+  AudioPlayer? _audioPlayer;
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +52,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   void dispose() {
     _confetti.dispose();
     _refreshTimer?.cancel();
+    _audioPlayer?.dispose();
     super.dispose();
   }
 
@@ -66,11 +74,59 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       }
     });
 
+    // Initialize audio player if session has audio
+    if (rec != null && rec.audioUrl != null) {
+      _initializeAudioPlayer(rec.audioUrl!);
+    }
+
     // If session is still processing, set up periodic refresh
     if (rec != null &&
         (rec.processingStatus == 'processing' ||
             rec.processingStatus == 'pending')) {
       _startPeriodicRefresh();
+    }
+  }
+
+  void _initializeAudioPlayer(String audioUrl) {
+    _audioPlayer = AudioPlayer();
+
+    // Set up event listeners
+    _audioPlayer!.onDurationChanged.listen((Duration duration) {
+      setState(() {
+        _duration = duration;
+      });
+    });
+
+    _audioPlayer!.onPositionChanged.listen((Duration position) {
+      setState(() {
+        _position = position;
+      });
+    });
+
+    _audioPlayer!.onPlayerComplete.listen((_) {
+      setState(() {
+        _isPlaying = false;
+        _position = Duration.zero;
+      });
+    });
+
+    // Set the audio source
+    _audioPlayer!.setSourceUrl(audioUrl);
+  }
+
+  Future<void> _togglePlayPause() async {
+    if (_audioPlayer == null) return;
+
+    if (_isPlaying) {
+      await _audioPlayer!.pause();
+      setState(() {
+        _isPlaying = false;
+      });
+    } else {
+      await _audioPlayer!.resume();
+      setState(() {
+        _isPlaying = true;
+      });
     }
   }
 
@@ -163,6 +219,34 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     final m = (seconds ~/ 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
     return '$m:$s';
+  }
+
+  String _formatDurationFromDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+
+  Widget _buildAudioVisualizer() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: List.generate(5, (index) {
+        final height = _isPlaying
+            ? 4.0 +
+                  (index * 2.0) +
+                  (DateTime.now().millisecondsSinceEpoch % 1000 / 1000 * 8)
+            : 4.0;
+        return Container(
+          width: 3,
+          height: height,
+          decoration: BoxDecoration(
+            color: _isPlaying ? AppColors.primary : Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        );
+      }),
+    );
   }
 
   String _formatSessionDate(DateTime? createdAt) {
@@ -1191,13 +1275,49 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               // Transcript section (moved to bottom)
               if (transcript != null && transcript.isNotEmpty) ...[
                 const SizedBox(height: 40),
-                Text(
-                  'Your words',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+
+                // Header with audio controls
+                Row(
+                  children: [
+                    Text(
+                      'Your words',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (_record?.audioUrl != null) ...[
+                      const Spacer(),
+                      IconButton(
+                        onPressed: _togglePlayPause,
+                        icon: Icon(
+                          _isPlaying
+                              ? Icons.pause_circle_filled
+                              : Icons.play_circle_filled,
+                          size: 24,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Audio visualizer
+                      Container(
+                        width: 60,
+                        height: 20,
+                        child: _buildAudioVisualizer(),
+                      ),
+                      const SizedBox(width: 8),
+                      // Duration
+                      Text(
+                        _formatDurationFromDuration(_duration),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 12),
+
                 Text(
                   '"${_getTruncatedTranscript(transcript)}"',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(

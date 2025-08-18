@@ -13,6 +13,7 @@ class SessionRecord {
   processingStatus; // 'pending', 'processing', 'completed', 'failed'
   final SessionAnalysis? analysis;
   final String? title; // AI-generated session title
+  final String? audioUrl; // URL to the audio file
   final int totalActionItems;
   final int completedActionItems;
 
@@ -26,6 +27,7 @@ class SessionRecord {
     this.processingStatus,
     this.analysis,
     this.title,
+    this.audioUrl,
     this.totalActionItems = 0,
     this.completedActionItems = 0,
   });
@@ -177,7 +179,7 @@ class SessionApi {
     final sessionRow = await client
         .from('sessions')
         .select(
-          'id, created_at, duration_seconds, raw_transcript, processing_status, title',
+          'id, created_at, duration_seconds, raw_transcript, processing_status, title, audio_url',
         )
         .eq('id', sessionId)
         .maybeSingle();
@@ -254,6 +256,7 @@ class SessionApi {
       actions: actions,
       analysis: analysis,
       title: sessionRow['title'] as String?,
+      audioUrl: sessionRow['audio_url'] as String?,
     );
   }
 
