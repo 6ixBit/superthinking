@@ -1577,27 +1577,12 @@ class _ThoughtBubbleClipper extends CustomClipper<Path> {
     final w = size.width;
     final h = size.height;
     
-    // Create main rounded rectangle
+    // Create main rounded rectangle only
     const radius = 20.0;
     path.addRRect(RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, w, h),
       const Radius.circular(radius),
     ));
-    
-    // Add thought bubble tail on bottom left
-    const tailStartX = 30.0;
-    const tailStartY = h - 5; // Start just above the bottom edge
-    const tailWidth = 20.0;
-    const tailHeight = 15.0;
-    
-    // Create a small triangular tail pointing down and left
-    final tailPath = Path();
-    tailPath.moveTo(tailStartX, tailStartY);
-    tailPath.lineTo(tailStartX - tailWidth * 0.7, tailStartY + tailHeight);
-    tailPath.lineTo(tailStartX + tailWidth * 0.3, tailStartY + tailHeight * 0.8);
-    tailPath.close();
-    
-    path.addPath(tailPath, Offset.zero);
     
     return path;
   }
@@ -1633,15 +1618,14 @@ class _StyledDialog extends StatelessWidget {
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              primary.withValues(alpha: 0.85),
-              secondary.withValues(alpha: 0.85),
+              primary.withValues(alpha: 0.18),
+              secondary.withValues(alpha: 0.18),
             ],
           ),
           boxShadow: [
@@ -1653,9 +1637,15 @@ class _StyledDialog extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Text(
               title,
               textAlign: TextAlign.center,
@@ -1672,6 +1662,7 @@ class _StyledDialog extends StatelessWidget {
               children: actions,
             ),
           ],
+        ),
         ),
       ),
     );

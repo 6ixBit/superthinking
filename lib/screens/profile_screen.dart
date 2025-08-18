@@ -115,6 +115,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _showBugReportDialog() async {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (ctx) => _FeedbackDialog(
+        title: 'Report a Bug',
+        titleController: titleController,
+        descriptionController: descriptionController,
+        titleHint: 'Brief description of the bug',
+        descriptionHint: 'Please describe what happened, what you expected, and steps to reproduce the issue...',
+        submitLabel: 'Report Bug',
+        type: 'bug',
+      ),
+    );
+
+    if (result != null) {
+      await _submitFeedback('bug', result['title']!, result['description']!);
+    }
+  }
+
+  Future<void> _showFeatureRequestDialog() async {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (ctx) => _FeedbackDialog(
+        title: 'Request a Feature',
+        titleController: titleController,
+        descriptionController: descriptionController,
+        titleHint: 'Feature name or summary',
+        descriptionHint: 'Please describe the feature you\'d like to see, how it would help you, and any specific details...',
+        submitLabel: 'Submit Request',
+        type: 'feature_request',
+      ),
+    );
+
+    if (result != null) {
+      await _submitFeedback('feature_request', result['title']!, result['description']!);
+    }
+  }
+
+  Future<void> _submitFeedback(String type, String title, String description) async {
+    try {
+      final user = SupabaseService.client.auth.currentUser;
+      if (user == null) return;
+
+      await SupabaseService.client.from('feedback').insert({
+        'user_id': user.id,
+        'type': type,
+        'title': title,
+        'description': description,
+        'user_email': user.email,
+        'device_info': {
+          'platform': Theme.of(context).platform.name,
+          'app_version': '1.0.0', // You can get this from package_info_plus
+        },
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              type == 'bug' 
+                ? 'Bug report submitted successfully!' 
+                : 'Feature request submitted successfully!'
+            ),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to submit. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
@@ -411,14 +496,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton.icon(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Bug report coming soon'),
-                                      duration: Duration(seconds: 1),
-                                    ),
-                                  );
-                                },
+                                onPressed: _showBugReportDialog,
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.primary,
                                   side: BorderSide(
@@ -444,16 +522,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton.icon(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Feature request coming soon',
-                                      ),
-                                      duration: Duration(seconds: 1),
-                                    ),
-                                  );
-                                },
+                                onPressed: _showFeatureRequestDialog,
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.black87,
                                   side: const BorderSide(
@@ -654,6 +723,161 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedbackDialog extends StatelessWidget {
+  final String title;
+  final TextEditingController titleController;
+  final TextEditingController descriptionController;
+  final String titleHint;
+  final String descriptionHint;
+  final String submitLabel;
+  final String type;
+
+  const _FeedbackDialog({
+    required this.title,
+    required this.titleController,
+    required this.descriptionController,
+    required this.titleHint,
+    required this.descriptionHint,
+    required this.submitLabel,
+    required this.type,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+      ),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary.withValues(alpha: 0.18),
+              AppColors.secondary.withValues(alpha: 0.18),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              blurRadius: 24,
+              spreadRadius: 2,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Title field
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  hintText: titleHint,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.95),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                maxLength: 200,
+              ),
+              const SizedBox(height: 12),
+              // Description field
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  hintText: descriptionHint,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.95),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                maxLines: 4,
+                maxLength: 1000,
+              ),
+              const SizedBox(height: 24),
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      final title = titleController.text.trim();
+                      final description = descriptionController.text.trim();
+                      
+                      if (title.isEmpty || description.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please fill in both title and description'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      Navigator.of(context).pop({
+                        'title': title,
+                        'description': description,
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: type == 'bug' ? Colors.red : AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(submitLabel),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
