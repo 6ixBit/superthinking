@@ -52,6 +52,58 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     return '$m:$s';
   }
 
+  String _getDayOfWeek(int weekday) {
+    switch (weekday) {
+      case DateTime.monday:
+        return 'Monday';
+      case DateTime.tuesday:
+        return 'Tuesday';
+      case DateTime.wednesday:
+        return 'Wednesday';
+      case DateTime.thursday:
+        return 'Thursday';
+      case DateTime.friday:
+        return 'Friday';
+      case DateTime.saturday:
+        return 'Saturday';
+      case DateTime.sunday:
+        return 'Sunday';
+      default:
+        return '';
+    }
+  }
+
+  String _getMonth(int month) {
+    switch (month) {
+      case 1:
+        return 'Jan';
+      case 2:
+        return 'Feb';
+      case 3:
+        return 'Mar';
+      case 4:
+        return 'Apr';
+      case 5:
+        return 'May';
+      case 6:
+        return 'Jun';
+      case 7:
+        return 'Jul';
+      case 8:
+        return 'Aug';
+      case 9:
+        return 'Sep';
+      case 10:
+        return 'Oct';
+      case 11:
+        return 'Nov';
+      case 12:
+        return 'Dec';
+      default:
+        return '';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -247,11 +299,45 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final dayOfWeek = _getDayOfWeek(now.weekday);
+    final month = _getMonth(now.month);
+
     return Scaffold(
       appBar: null,
       body: Stack(
         children: [
           const Positioned.fill(child: IgnorePointer(child: OracleAura())),
+          // Date in top left
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 24,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dayOfWeek,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF8B7355),
+                    letterSpacing: -0.2,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  '$month ${now.day} ${now.year}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF8B7355),
+                    letterSpacing: -0.2,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
