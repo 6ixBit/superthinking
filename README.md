@@ -77,3 +77,76 @@ Used in visual backgrounds and animations:
 ### Notes
 
 - Storage and RLS enforce `<userId>/...` object paths; unrelated to UI but impacts asset URL shape in logs.
+
+## Notification System
+
+### Overview
+
+The app includes a comprehensive notification system designed to encourage user engagement and provide personalized reminders based on user preferences and behavior.
+
+### Features
+
+#### 1. Task Reminders
+
+- **Trigger**: When user has pending tasks from their thinking sessions
+- **Timing**: Next day at 9 AM
+- **Message**: "You have X tasks left from your last session"
+- **Purpose**: Encourage users to check in on their progress
+
+#### 2. Personalized Prompts
+
+- **Trigger**: Based on user's preferred time (Morning, Day, Evening)
+- **Timing**: User's chosen time preference
+- **Message**: Personalized based on onboarding responses
+- **Purpose**: Encourage reflection at user's preferred time
+
+#### 3. Daily Prompts
+
+- **Trigger**: Random daily prompts (50% chance)
+- **Timing**: Random time between 9 AM and 8 PM
+- **Message**: Various encouraging prompts to think and reflect
+- **Purpose**: Maintain daily engagement
+
+### Implementation
+
+#### Core Components
+
+- **NotificationService**: Handles local notification scheduling
+- **NotificationManager**: Business logic for notification timing and content
+
+#### Database Schema
+
+```sql
+-- Notification tracking
+CREATE TABLE user_notifications (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  type TEXT NOT NULL,
+  data JSONB DEFAULT '{}',
+  sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  read_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+#### Integration Points
+
+- **Session Completion**: Triggers task reminders and personalized prompts
+- **Task Completion**: Updates notification logic based on remaining tasks
+- **App Launch**: Initializes notification system and schedules daily notifications
+
+### User Experience
+
+- **Personalized**: Messages tailored to user's thinking preferences
+- **Smart Timing**: Uses user's preferred time from onboarding
+- **Engaging**: Varied message types to maintain interest
+- **Actionable**: Clear calls-to-action that drive app usage
+
+### Technical Details
+
+- **Local Notifications**: Uses `flutter_local_notifications` package
+- **Timezone Support**: Proper handling of user's local timezone
+- **Permission Handling**: Requests notification permissions during onboarding
+- **Background Processing**: Notifications work even when app is closed

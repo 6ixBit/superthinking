@@ -4,6 +4,7 @@ import 'app.dart';
 import 'supabase/supabase_client.dart';
 import 'config/revenuecat_config.dart';
 import 'services/revenuecat.dart';
+import 'services/notification_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,9 @@ Future<void> main() async {
       apiKeyIOS: RevenueCatConfig.iosApiKey,
     );
   }
+
+  // Initialize notification system
+  await NotificationManager.initialize();
 
   runApp(const AppRoot());
 }

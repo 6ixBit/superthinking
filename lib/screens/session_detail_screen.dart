@@ -7,6 +7,7 @@ import '../state/app_state.dart';
 import 'package:confetti/confetti.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import '../services/notification_manager.dart';
 
 class SessionDetailScreen extends StatefulWidget {
   final String sessionId;
@@ -101,6 +102,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       // Stop refreshing if processing is complete
       if (rec != null && rec.processingStatus == 'completed') {
         timer.cancel();
+
+        // Schedule notifications when session is completed
+        NotificationManager.onSessionCompleted();
       }
     });
   }
@@ -210,6 +214,11 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         }
       } else {
         print('[SessionDetail] Database update successful');
+
+        // Trigger notification manager when task is completed
+        if (newStatus == 'completed') {
+          NotificationManager.onTaskCompleted();
+        }
       }
     } catch (e) {
       print('[SessionDetail] Error updating action item: $e');

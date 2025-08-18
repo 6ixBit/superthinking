@@ -509,4 +509,50 @@ class SessionApi {
     });
     return topStyle;
   }
+
+  /// Count pending tasks from sessions created within a specific date range
+  static Future<int> countPendingTasksFromDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final client = SupabaseService.client;
+    final user = client.auth.currentUser;
+    if (user == null) return 0;
+
+    try {
+      // Get session IDs from the specified date range
+      final sessionsRes = await client
+          .from('sessions')
+          .select('id')
+          .eq('user_id', user.id)
+          .gte('created_at', startDate.toIso8601String())
+          .lt('created_at', endDate.toIso8601String());
+
+      if (sessionsRes is! List || sessionsRes.isEmpty) return 0;
+
+      final sessionIds = <String>[];
+      for (final row in sessionsRes) {
+        final id = row['id'] as String?;
+        if (id != null) sessionIds.add(id);
+      }
+      if (sessionIds.isEmpty) return 0;
+
+      // Count pending action items from these sessions
+      final actionRes = await client
+          .from('action_items')
+          .select('id')
+          .filter(
+            'session_id',
+            'in',
+            '(${sessionIds.map((e) => '"$e"').join(',')})',
+          )
+          .eq('status', 'pending');
+
+      if (actionRes is! List) return 0;
+      return actionRes.length;
+    } catch (e) {
+      print('[SessionApi] Error counting pending tasks from date range: $e');
+      return 0;
+    }
+  }
 }
