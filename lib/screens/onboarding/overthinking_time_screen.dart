@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:purchases_flutter/purchases_flutter.dart' as rc;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 
 import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
@@ -115,13 +116,23 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           const SizedBox(height: 20),
-                          ..._options.map(
-                            (o) => _OptionButton(
-                              label: o,
-                              selected: _selected == o,
-                              onTap: () => setState(() => _selected = o),
-                            ),
-                          ),
+                          ...(() {
+                            final emojiFor = <String, String>{
+                              'Morning': '🌅',
+                              'Day': '🌞',
+                              'Evening': '🌙',
+                            };
+                            return _options
+                                .map(
+                                  (o) => _OptionButton(
+                                    label: o,
+                                    emoji: emojiFor[o],
+                                    selected: _selected == o,
+                                    onTap: () => setState(() => _selected = o),
+                                  ),
+                                )
+                                .toList();
+                          })(),
                         ],
                       ),
                     ),
@@ -140,37 +151,35 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // TextButton(
-              //   onPressed: () async {
-              //     if (!mounted) return;
-              //     // Navigate immediately with a lightweight fade
-              //     Navigator.of(context).pushAndRemoveUntil(
-              //       PageRouteBuilder(
-              //         pageBuilder: (_, __, ___) => const HomeShell(),
-              //         transitionDuration: const Duration(milliseconds: 160),
-              //         reverseTransitionDuration: const Duration(
-              //           milliseconds: 160,
-              //         ),
-              //         transitionsBuilder: (_, animation, __, child) {
-              //           return FadeTransition(opacity: animation, child: child);
-              //         },
-              //       ),
-              //       (route) => false,
-              //     );
-              //     // Mark completion in background
-              //     Future.microtask(() async {
-              //       try {
-              //         await UserProfileApi.markOnboardingCompleted();
-              //       } catch (_) {}
-              //     });
-              //   },
-              //   child: Text(
-              //     'Set up later',
-              //     style: Theme.of(
-              //       context,
-              //     ).textTheme.bodySmall?.copyWith(color: Colors.black54),
-              //   ),
-              // ),
+              if (!kReleaseMode)
+                TextButton(
+                  onPressed: () async {
+                    if (!mounted) return;
+                    Navigator.of(context).pushAndRemoveUntil(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) => const HomeShell(),
+                        transitionDuration: const Duration(milliseconds: 160),
+                        reverseTransitionDuration: const Duration(
+                          milliseconds: 160,
+                        ),
+                        transitionsBuilder: (_, animation, __, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                      ),
+                      (route) => false,
+                    );
+                    Future.microtask(() async {
+                      try {
+                        await UserProfileApi.markOnboardingCompleted();
+                      } catch (_) {}
+                    });
+                  },
+                  child: Text(
+                    'Skip (test)',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                  ),
+                ),
               const SizedBox(height: 8),
               FilledButton(
                 onPressed: _selected == null ? null : _continue,
@@ -232,10 +241,12 @@ class _OnboardingHeader extends StatelessWidget {
 
 class _OptionButton extends StatelessWidget {
   final String label;
+  final String? emoji;
   final bool selected;
   final VoidCallback onTap;
   const _OptionButton({
     required this.label,
+    this.emoji,
     required this.selected,
     required this.onTap,
   });
@@ -265,7 +276,14 @@ class _OptionButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label),
+              Row(
+                children: [
+                  if (emoji != null)
+                    Text(emoji!, style: const TextStyle(fontSize: 16)),
+                  if (emoji != null) const SizedBox(width: 8),
+                  Text(label),
+                ],
+              ),
               if (selected)
                 const Icon(Icons.check_circle, color: AppColors.primary)
               else

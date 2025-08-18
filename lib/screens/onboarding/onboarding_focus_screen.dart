@@ -62,13 +62,23 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
                           const SizedBox(height: 16),
-                          ..._options.map(
-                            (o) => _OptionButton(
-                              label: o,
-                              selected: _selected == o,
-                              onTap: () => setState(() => _selected = o),
-                            ),
-                          ),
+                          ...(() {
+                            final emojiFor = <String, String>{
+                              'Problems': '🧩',
+                              'Possibilities': '✨',
+                              'Both': '⚖️',
+                            };
+                            return _options
+                                .map(
+                                  (o) => _OptionButton(
+                                    label: o,
+                                    emoji: emojiFor[o],
+                                    selected: _selected == o,
+                                    onTap: () => setState(() => _selected = o),
+                                  ),
+                                )
+                                .toList();
+                          })(),
                         ],
                       ),
                     ),
@@ -95,10 +105,12 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
 
 class _OptionButton extends StatelessWidget {
   final String label;
+  final String? emoji;
   final bool selected;
   final VoidCallback onTap;
   const _OptionButton({
     required this.label,
+    this.emoji,
     required this.selected,
     required this.onTap,
   });
@@ -128,7 +140,14 @@ class _OptionButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label),
+              Row(
+                children: [
+                  if (emoji != null)
+                    Text(emoji!, style: const TextStyle(fontSize: 16)),
+                  if (emoji != null) const SizedBox(width: 8),
+                  Text(label),
+                ],
+              ),
               if (selected)
                 const Icon(Icons.check_circle, color: AppColors.primary)
               else
