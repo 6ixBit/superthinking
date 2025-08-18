@@ -53,8 +53,8 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id,
-      'You have $pendingTasksCount tasks left from your last session',
-      'Time to check in on your progress and see what you can accomplish today.',
+      'SuperThinking',
+      'You have $pendingTasksCount tasks left from your last session.',
       tz.TZDateTime.from(scheduledTime, tz.local),
       const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -90,7 +90,7 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id,
-      'Anything on your mind today?',
+      'SuperThinking',
       message,
       scheduledTime,
       const NotificationDetails(
@@ -129,14 +129,14 @@ class NotificationService {
         : scheduledTime;
 
     final messages = [
-      'How are you feeling about your goals today?',
-      'What\'s the biggest challenge you\'re facing right now?',
-      'Is there something you\'ve been meaning to think through?',
-      'How can you make today a little better?',
-      'What\'s on your mind that could use some clarity?',
+      'How are you feeling about your goals?',
+      'What\'s your biggest challenge right now?',
+      'Something you\'ve been meaning to think through?',
+      'How can you make today better?',
+      'What needs clarity today?',
       'Ready to explore your thoughts?',
-      'What would you like to work through today?',
-      'Time for some mindful reflection?',
+      'What would you like to work through?',
+      'Time for reflection?',
     ];
 
     final randomMessage = messages[random.nextInt(messages.length)];
@@ -144,7 +144,7 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id,
-      'Time to think',
+      'SuperThinking',
       randomMessage,
       tz.TZDateTime.from(finalTime, tz.local),
       const NotificationDetails(
@@ -189,7 +189,7 @@ class NotificationService {
 
     await _notifications.zonedSchedule(
       id,
-      'Test Notification',
+      'SuperThinking',
       'This is a test notification from SuperThinking!',
       tz.TZDateTime.from(scheduledTime, tz.local),
       const NotificationDetails(

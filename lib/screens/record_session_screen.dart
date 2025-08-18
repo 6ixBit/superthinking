@@ -308,34 +308,38 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       body: Stack(
         children: [
           const Positioned.fill(child: IgnorePointer(child: OracleAura())),
-          // Date in top left
+          // Date layout - day on left, date on right
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
-            left: 24,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  dayOfWeek,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF8B7355),
-                    letterSpacing: -0.2,
-                    fontSize: 16,
+            left: 0,
+            right: 0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    dayOfWeek,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF8B7355),
+                      letterSpacing: -0.2,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                Text(
-                  '$month ${now.day} ${now.year}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF8B7355),
-                    letterSpacing: -0.2,
-                    fontSize: 16,
+                  Text(
+                    '$month ${now.day} ${now.year}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF8B7355),
+                      letterSpacing: -0.2,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Padding(

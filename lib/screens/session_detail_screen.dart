@@ -724,9 +724,10 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       children: [
         Text(
           'Today you are a ',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade600,
+          ),
         ),
         const SizedBox(height: 12),
         Container(
@@ -1022,8 +1023,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       _record!.analysis!.gentleAdvice,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.black87,
+                        color: const Color(0xFFDAA520),
+                        fontWeight: FontWeight.w600,
                         height: 1.35,
+                        fontSize: 16,
+                        fontFamily: 'Georgia',
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ),
@@ -1044,6 +1049,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       'Your next steps',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ),
