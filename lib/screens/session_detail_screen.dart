@@ -1468,38 +1468,26 @@ class _ThoughtBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      child: ClipPath(
-        clipper: _ThoughtBubbleClipper(),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(32, 28, 32, 28),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary.withValues(alpha: 0.18),
-                AppColors.secondary.withValues(alpha: 0.18),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                blurRadius: 16,
-                spreadRadius: 4,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-              height: 1.4,
-            ),
-          ),
+      padding: const EdgeInsets.fromLTRB(32, 28, 32, 28),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.0),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.18),
+            AppColors.secondary.withValues(alpha: 0.18),
+          ],
+        ),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Colors.black87,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          height: 1.4,
         ),
       ),
     );

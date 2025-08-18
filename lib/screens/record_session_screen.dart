@@ -104,6 +104,30 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     }
   }
 
+  int _generateActiveUserCount() {
+    // Generate a realistic number based on time of day
+    final now = DateTime.now();
+    final hour = now.hour;
+    
+    // Base number varies by hour to simulate realistic usage patterns
+    int base;
+    if (hour >= 6 && hour <= 9) {
+      base = 45 + (hour - 6) * 15; // Morning: 45-90
+    } else if (hour >= 10 && hour <= 17) {
+      base = 60 + (hour - 10) * 8; // Day: 60-116  
+    } else if (hour >= 18 && hour <= 22) {
+      base = 80 + (hour - 18) * 10; // Evening: 80-120
+    } else {
+      base = 25 + hour * 2; // Night/early morning: 25-45
+    }
+    
+    // Add some variation based on minutes for more dynamic feel
+    final variation = (now.minute % 10) - 5;
+    final result = base + variation;
+    
+    return math.max(30, result); // Minimum 30
+  }
+
   @override
   void initState() {
     super.initState();
@@ -321,8 +345,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
                   Text(
                     'Happy ' + dayOfWeek,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                       color: const Color(0xFF8B7355),
                       letterSpacing: -0.2,
                       fontSize: 16,
@@ -331,8 +354,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
                   Text(
                     '$month ${now.day} ${now.year}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                       color: const Color(0xFF8B7355),
                       letterSpacing: -0.2,
                       fontSize: 16,
@@ -437,6 +459,40 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
             ),
           ),
           if (isRecording) const SizedBox.shrink(),
+          // Community indicator
+          Positioned(
+            bottom: MediaQuery.of(context).padding.bottom + 100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${_generateActiveUserCount()}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF8B7355),
+                        letterSpacing: -0.2,
+                        fontSize: 16,
+                      ),
+                    ),
+                    TextSpan(
+                      text: ' people are SuperThinking right now',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF8B7355),
+                        letterSpacing: -0.2,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
