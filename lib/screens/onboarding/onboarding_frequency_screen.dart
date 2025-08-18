@@ -34,7 +34,7 @@ class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 4, total: 6),
+        child: _OnboardingHeader(current: 5, total: 7),
       ),
       body: Stack(
         children: [

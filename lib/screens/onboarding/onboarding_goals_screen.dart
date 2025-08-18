@@ -5,23 +5,27 @@ import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
 import '../../supabase/user_profile_api.dart';
 
-class OnboardingFocusScreen extends StatefulWidget {
-  const OnboardingFocusScreen({super.key});
+class OnboardingGoalsScreen extends StatefulWidget {
+  const OnboardingGoalsScreen({super.key});
 
   @override
-  State<OnboardingFocusScreen> createState() => _OnboardingFocusScreenState();
+  State<OnboardingGoalsScreen> createState() => _OnboardingGoalsScreenState();
 }
 
-class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
+class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
   String? _selected;
-  final List<String> _options = const ['Problems', 'Possibilities', 'Both'];
+  final List<String> _options = const [
+    'Turn problems into solutions',
+    'Achieve mental clarity',
+    'Understanding your thought process better'
+  ];
 
-  void _onContinue() async {
+  Future<void> _onContinue() async {
     if (_selected == null) return;
-    context.read<AppState>().addQuickAnswer(_selected!);
-    await UserProfileApi.setOnboardingResponse('overthinking_focus', _selected);
+    context.read<AppState>().addQuickAnswer('Goal: ${_selected!}');
+    await UserProfileApi.setOnboardingResponse('achievement_goal', _selected);
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/overthinking-time');
+    Navigator.of(context).pushNamed('/onboarding-age');
   }
 
   @override
@@ -30,7 +34,7 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 6, total: 7),
+        child: _OnboardingHeader(current: 2, total: 7),
       ),
       body: Stack(
         children: [
@@ -57,16 +61,16 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'When you overthink, is it mostly…',
+                            'What do you want to achieve from using this app?',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
                           const SizedBox(height: 16),
                           ...(() {
                             final emojiFor = <String, String>{
-                              'Problems': '🧩',
-                              'Possibilities': '✨',
-                              'Both': '⚖️',
+                              'Turn problems into solutions': '🔧',
+                              'Achieve mental clarity': '🧘‍♂️',
+                              'Understanding your thought process better': '🧠',
                             };
                             return _options
                                 .map(
@@ -145,7 +149,7 @@ class _OptionButton extends StatelessWidget {
                   if (emoji != null)
                     Text(emoji!, style: const TextStyle(fontSize: 16)),
                   if (emoji != null) const SizedBox(width: 8),
-                  Text(label),
+                  Flexible(child: Text(label)),
                 ],
               ),
               if (selected)

@@ -30,7 +30,7 @@ class _OnboardingGenderScreenState extends State<OnboardingGenderScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 3, total: 6),
+        child: _OnboardingHeader(current: 4, total: 7),
       ),
       body: Stack(
         children: [
