@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:purchases_flutter/purchases_flutter.dart' as rc;
 
 import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
@@ -27,30 +29,46 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
     }
 
     if (!mounted) return;
-    // Navigate immediately with a lightweight fade and clear the stack
-    Navigator.of(context).pushAndRemoveUntil(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const HomeShell(),
-        transitionDuration: const Duration(milliseconds: 160),
-        reverseTransitionDuration: const Duration(milliseconds: 160),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-      (route) => false,
-    );
+    // Present RevenueCat paywall (hard paywall)
+    try {
+      await RevenueCatUI.presentPaywall(displayCloseButton: true);
+    } catch (_) {}
 
-    // Run Supabase updates in background to avoid blocking the transition
-    Future.microtask(() async {
-      try {
-        if (chosen != null) {
-          await UserProfileApi.setPreferredPromptTime(chosen);
-        }
-        await UserProfileApi.markOnboardingCompleted();
-      } catch (_) {
-        // ignore
-      }
-    });
+    if (!mounted) return;
+
+    // Check if user has access (entitlement active). Replace 'pro' if your entitlement id differs.
+    bool hasAccess = false;
+    try {
+      final info = await rc.Purchases.getCustomerInfo();
+      hasAccess = info.entitlements.active.isNotEmpty;
+    } catch (_) {}
+
+    if (hasAccess) {
+      // Navigate to home only if subscribed / has entitlement
+      Navigator.of(context).pushAndRemoveUntil(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const HomeShell(),
+          transitionDuration: const Duration(milliseconds: 160),
+          reverseTransitionDuration: const Duration(milliseconds: 160),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+        (route) => false,
+      );
+
+      // Run Supabase updates in background
+      Future.microtask(() async {
+        try {
+          if (chosen != null) {
+            await UserProfileApi.setPreferredPromptTime(chosen);
+          }
+          await UserProfileApi.markOnboardingCompleted();
+        } catch (_) {}
+      });
+    } else {
+      // Stay on this screen (hard paywall)
+    }
   }
 
   @override
@@ -122,37 +140,37 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextButton(
-                onPressed: () async {
-                  if (!mounted) return;
-                  // Navigate immediately with a lightweight fade
-                  Navigator.of(context).pushAndRemoveUntil(
-                    PageRouteBuilder(
-                      pageBuilder: (_, __, ___) => const HomeShell(),
-                      transitionDuration: const Duration(milliseconds: 160),
-                      reverseTransitionDuration: const Duration(
-                        milliseconds: 160,
-                      ),
-                      transitionsBuilder: (_, animation, __, child) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
-                    ),
-                    (route) => false,
-                  );
-                  // Mark completion in background
-                  Future.microtask(() async {
-                    try {
-                      await UserProfileApi.markOnboardingCompleted();
-                    } catch (_) {}
-                  });
-                },
-                child: Text(
-                  'Set up later',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.black54),
-                ),
-              ),
+              // TextButton(
+              //   onPressed: () async {
+              //     if (!mounted) return;
+              //     // Navigate immediately with a lightweight fade
+              //     Navigator.of(context).pushAndRemoveUntil(
+              //       PageRouteBuilder(
+              //         pageBuilder: (_, __, ___) => const HomeShell(),
+              //         transitionDuration: const Duration(milliseconds: 160),
+              //         reverseTransitionDuration: const Duration(
+              //           milliseconds: 160,
+              //         ),
+              //         transitionsBuilder: (_, animation, __, child) {
+              //           return FadeTransition(opacity: animation, child: child);
+              //         },
+              //       ),
+              //       (route) => false,
+              //     );
+              //     // Mark completion in background
+              //     Future.microtask(() async {
+              //       try {
+              //         await UserProfileApi.markOnboardingCompleted();
+              //       } catch (_) {}
+              //     });
+              //   },
+              //   child: Text(
+              //     'Set up later',
+              //     style: Theme.of(
+              //       context,
+              //     ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+              //   ),
+              // ),
               const SizedBox(height: 8),
               FilledButton(
                 onPressed: _selected == null ? null : _continue,

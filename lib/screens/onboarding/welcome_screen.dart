@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../supabase/user_profile_api.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -34,21 +33,7 @@ class WelcomeScreen extends StatelessWidget {
                     child: const Text('Activate My SuperThinking'),
                   ),
                   const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () async {
-                      await UserProfileApi.markOnboardingCompleted();
-                      if (!context.mounted) return;
-                      Navigator.of(
-                        context,
-                      ).pushNamedAndRemoveUntil('/home', (r) => false);
-                    },
-                    child: Text(
-                      'Skip',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
-                    ),
-                  ),
+
                   const Spacer(flex: 2),
                 ],
               ),

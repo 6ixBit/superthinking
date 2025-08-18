@@ -53,6 +53,7 @@ dependencies:
   path: ^1.9.0
   http: ^1.2.1
   purchases_flutter: any
+  purchases_ui_flutter: any
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
   audioplayers: ^5.2.1

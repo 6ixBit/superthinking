@@ -319,7 +319,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    dayOfWeek,
+                    'Happy ' + dayOfWeek,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontStyle: FontStyle.italic,
                       fontWeight: FontWeight.w500,
