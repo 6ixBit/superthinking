@@ -168,19 +168,38 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   Future<void> _confirmAndDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete session?'),
+      builder: (ctx) => _StyledDialog(
+        title: 'Delete session?',
+        primaryColor: Colors.red,
+        secondaryColor: Colors.orange,
         content: Text(
           'This will permanently delete this session and its insights.',
-          style: const TextStyle(color: Colors.red),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.black87,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -251,7 +270,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
   String _formatSessionDate(DateTime? createdAt) {
     if (createdAt == null) return '';
-    return DateFormat('EEE, MMM d • h:mm a').format(createdAt);
+    return DateFormat('EEE, MMM d').format(createdAt);
+  }
+
+  String _formatSessionTime(DateTime? createdAt) {
+    if (createdAt == null) return '';
+    return DateFormat('h:mm a').format(createdAt);
   }
 
   void _toggleStep(int index) async {
@@ -317,25 +341,109 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     }
   }
 
+  void _showAddActionDialog() {
+    if (_record == null) return;
+
+    final controller = TextEditingController();
+    showDialog<String>(
+      context: context,
+      builder: (ctx) => _StyledDialog(
+        title: 'New action',
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Describe a small next step…',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.95),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    ).then((added) async {
+      if (added == null || added.isEmpty) return;
+
+      final newItem = await SessionApi.createActionItem(
+        sessionId: _record!.id,
+        description: added,
+        source: 'user_stated',
+        priority: 'medium',
+      );
+
+      if (newItem != null && mounted) {
+        setState(() {
+          _record!.actions.add(newItem);
+        });
+      }
+    });
+  }
+
   Future<void> _deleteActionItem(int index) async {
     if (_record == null || index >= _record!.actions.length) return;
 
     final action = _record!.actions[index];
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete action?'),
+      builder: (ctx) => _StyledDialog(
+        title: 'Delete action?',
+        primaryColor: Colors.red,
+        secondaryColor: Colors.orange,
         content: Text(
           'Are you sure you want to delete this action: "${action.description}"?',
-          style: const TextStyle(color: Colors.red),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.black87,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -578,13 +686,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
-        // Single guidance line based on strongest signal (problem/solution/shift)
-        Text(
-          _buildTopInsight(problemFocus, solutionFocus, shiftScore),
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.black54, height: 1.35),
-        ),
+        // Show personalized analysis if available, otherwise show chart only
+        if (analysis.attributeAnalysis != null && analysis.attributeAnalysis!.trim().isNotEmpty)
+          Text(
+            analysis.attributeAnalysis!,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.black54, height: 1.35),
+          ),
         const SizedBox(height: 16),
 
         // Progress visualization
@@ -629,45 +738,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     );
   }
 
-  String _buildAttributesInsight(int problemFocus, int solutionFocus) {
-    // Provide gentle, expert guidance for overthinking patterns
-    if (problemFocus >= solutionFocus + 10) {
-      return "You were really anchored in the problem today — that makes sense when something feels heavy. Let’s honor the weight of it, and gently shift one small step toward what’s in your control.";
-    }
-    if (solutionFocus >= problemFocus + 10) {
-      return "Your thinking leaned solution‑focused — great momentum. Consider marking one clear next action you can do in 5–10 minutes to keep the energy moving.";
-    }
-    return "You showed a healthy balance — seeing both the friction and the path forward. A small, kind step now can translate clarity into momentum.";
-  }
-
-  String _buildShiftChangeInsight(int shiftPercentage) {
-    if (shiftPercentage >= 80) {
-      return "A powerful reframe — you moved from weight to wisdom. Notice what unlocked that shift and bookmark it for future sessions.";
-    }
-    if (shiftPercentage >= 50) {
-      return "A strong pivot toward solutions — your ideas opened up. Capture one takeaway you want to act on this week.";
-    }
-    if (shiftPercentage >= 20) {
-      return "You nudged things forward — even small shifts matter. Keep the thread by choosing one gentle next step.";
-    }
-    return "Today was more about naming the problem — that’s valid. When you’re ready, we’ll look for one tiny lever you can move.";
-  }
-
-  String _buildTopInsight(
-    int problemFocus,
-    int solutionFocus,
-    int shiftPercentage,
-  ) {
-    final top = [
-      problemFocus,
-      solutionFocus,
-      shiftPercentage,
-    ].reduce((a, b) => a > b ? a : b);
-    if (top == shiftPercentage) {
-      return _buildShiftChangeInsight(shiftPercentage);
-    }
-    return _buildAttributesInsight(problemFocus, solutionFocus);
-  }
 
   Widget _buildProgressBar(String label, int percentage, Color color) {
     return Column(
@@ -726,7 +796,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           'Today you are a ',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: Colors.grey.shade600,
           ),
         ),
         const SizedBox(height: 12),
@@ -894,25 +963,44 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         );
                         final newTitle = await showDialog<String>(
                           context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Edit title'),
+                          builder: (ctx) => _StyledDialog(
+                            title: 'Edit title',
                             content: TextField(
                               controller: controller,
                               autofocus: true,
                               textInputAction: TextInputAction.done,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Session title',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: Colors.white.withValues(alpha: 0.95),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               ),
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.of(ctx).pop(),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                                 child: const Text('Cancel'),
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.of(
-                                  ctx,
-                                ).pop(controller.text.trim()),
+                              ElevatedButton(
+                                onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                                 child: const Text('Save'),
                               ),
                             ],
@@ -1011,34 +1099,33 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       context,
                     ).textTheme.bodySmall?.copyWith(color: Colors.black54),
                   ),
+                  const Spacer(),
+                  Text(
+                    _formatSessionTime(_record?.createdAt),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                  ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               if (_record?.analysis?.gentleAdvice != null &&
                   _record!.analysis!.gentleAdvice.trim().isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Center(
-                    child: Text(
-                      _record!.analysis!.gentleAdvice,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFDAA520),
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
-                        fontSize: 16,
-                        fontFamily: 'Georgia',
-                        letterSpacing: 0.3,
-                      ),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    _ThoughtBubble(
+                      text: _record!.analysis!.gentleAdvice,
                     ),
-                  ),
+                    // Thought dots
+                    Positioned(
+                      bottom: -5,
+                      left: 20,
+                      child: _ThoughtDots(),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-              ],
-              // Thinking Style Badge
-              if (_record?.analysis != null) ...[
-                _buildThinkingStyleBadge(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
               ],
 
               // Next Steps section
@@ -1049,63 +1136,13 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       'Your next steps',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Colors.grey.shade600,
                       ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline),
                     tooltip: 'Add action',
-                    onPressed: () async {
-                      if (_record == null) return;
-                      final controller = TextEditingController();
-                      final added = await showDialog<String>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('New action'),
-                          content: TextField(
-                            controller: controller,
-                            autofocus: true,
-                            decoration: const InputDecoration(
-                              hintText: 'Describe a small next step…',
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(ctx).pop(controller.text.trim()),
-                              child: const Text('Add'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (added == null || added.isEmpty) return;
-                      final newItem = await SessionApi.createActionItem(
-                        sessionId: _record!.id,
-                        description: added,
-                        source: 'user_stated',
-                        priority: 'medium',
-                      );
-                      if (newItem != null && mounted) {
-                        setState(() {
-                          _record = SessionRecord(
-                            id: _record!.id,
-                            createdAt: _record!.createdAt,
-                            durationSeconds: _record!.durationSeconds,
-                            ideas: _record!.ideas,
-                            actions: [..._record!.actions, newItem],
-                            transcript: _record!.transcript,
-                            processingStatus: _record!.processingStatus,
-                            analysis: _record!.analysis,
-                            title: _record!.title,
-                          );
-                        });
-                      }
-                    },
+                    onPressed: () => _showAddActionDialog(),
                   ),
                 ],
               ),
@@ -1124,7 +1161,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
                           color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
                           Icons.delete,
@@ -1136,12 +1173,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         await _deleteActionItem(i);
                       },
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         onTap: () => _toggleStep(i),
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -1195,6 +1232,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
               if (_record?.analysis != null) ...[
                 const SizedBox(height: 32),
+                _buildThinkingStyleBadge(),
+                const SizedBox(height: 24),
                 _buildShiftScoreSection(),
               ],
 
@@ -1224,7 +1263,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Key Insights',
+                          '🗝️ Key Insights',
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -1258,7 +1297,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Strength Highlight',
+                          '💪 Strength Highlight',
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -1282,72 +1321,98 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               if (transcript != null && transcript.isNotEmpty) ...[
                 const SizedBox(height: 40),
 
-                // Header with audio controls
-                Row(
-                  children: [
-                    Text(
-                      'Your words',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (_record?.audioUrl != null) ...[
-                      const Spacer(),
-                      IconButton(
-                        onPressed: _togglePlayPause,
-                        icon: Icon(
-                          _isPlaying
-                              ? Icons.pause_circle_filled
-                              : Icons.play_circle_filled,
-                          size: 24,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Audio visualizer
-                      Container(
-                        width: 60,
-                        height: 20,
-                        child: _buildAudioVisualizer(),
-                      ),
-                      const SizedBox(width: 8),
-                      // Duration
-                      Text(
-                        _formatDurationFromDuration(_duration),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.black54,
-                          fontWeight: FontWeight.w500,
-                        ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(
+                      0xFFFFFFFF,
+                    ), // Card color from design guide
+                    borderRadius: BorderRadius.circular(
+                      16,
+                    ), // Standard card radius
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(
+                          0.04,
+                        ), // Generic card shadow
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                Text(
-                  '"${_getTruncatedTranscript(transcript)}"',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.black54,
-                    height: 1.35,
                   ),
-                ),
-                if (_shouldTruncateTranscript(transcript)) ...[
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _transcriptExpanded = !_transcriptExpanded;
-                      });
-                    },
-                    child: Text(
-                      _transcriptExpanded ? 'Read less' : 'Read more',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header with audio controls
+                        Row(
+                          children: [
+                            Text(
+                              'Your words',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            if (_record?.audioUrl != null) ...[
+                              const Spacer(),
+                              IconButton(
+                                onPressed: _togglePlayPause,
+                                icon: Icon(
+                                  _isPlaying
+                                      ? Icons.pause_circle_filled
+                                      : Icons.play_circle_filled,
+                                  size: 24,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Audio visualizer
+                              Container(
+                                width: 60,
+                                height: 20,
+                                child: _buildAudioVisualizer(),
+                              ),
+                              const SizedBox(width: 8),
+                              // Duration
+                              Text(
+                                _formatDurationFromDuration(_duration),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Colors.black54,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        Text(
+                          '"${_getTruncatedTranscript(transcript)}"',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.black54, height: 1.35),
+                        ),
+                        if (_shouldTruncateTranscript(transcript)) ...[
+                          const SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _transcriptExpanded = !_transcriptExpanded;
+                              });
+                            },
+                            child: Text(
+                              _transcriptExpanded ? 'Read less' : 'Read more',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                ],
+                ),
               ],
             ],
           ),
@@ -1385,6 +1450,226 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   Colors.green,
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThoughtBubble extends StatelessWidget {
+  final String text;
+  
+  const _ThoughtBubble({
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: ClipPath(
+        clipper: _ThoughtBubbleClipper(),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(32, 28, 32, 28),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withValues(alpha: 0.18),
+                AppColors.secondary.withValues(alpha: 0.18),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                blurRadius: 16,
+                spreadRadius: 4,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThoughtDots extends StatelessWidget {
+  const _ThoughtDots();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        // Largest dot
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.4),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Medium dot
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.35),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 3),
+        // Smallest dot
+        Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThoughtBubbleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    final w = size.width;
+    final h = size.height;
+    
+    // Create main rounded rectangle
+    const radius = 20.0;
+    path.addRRect(RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, w, h),
+      const Radius.circular(radius),
+    ));
+    
+    // Add thought bubble tail on bottom left
+    const tailStartX = 30.0;
+    const tailStartY = h - 5; // Start just above the bottom edge
+    const tailWidth = 20.0;
+    const tailHeight = 15.0;
+    
+    // Create a small triangular tail pointing down and left
+    final tailPath = Path();
+    tailPath.moveTo(tailStartX, tailStartY);
+    tailPath.lineTo(tailStartX - tailWidth * 0.7, tailStartY + tailHeight);
+    tailPath.lineTo(tailStartX + tailWidth * 0.3, tailStartY + tailHeight * 0.8);
+    tailPath.close();
+    
+    path.addPath(tailPath, Offset.zero);
+    
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class _StyledDialog extends StatelessWidget {
+  final String title;
+  final Widget content;
+  final List<Widget> actions;
+  final Color? primaryColor;
+  final Color? secondaryColor;
+
+  const _StyledDialog({
+    required this.title,
+    required this.content,
+    required this.actions,
+    this.primaryColor,
+    this.secondaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = primaryColor ?? AppColors.primary;
+    final secondary = secondaryColor ?? AppColors.secondary;
+    
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+      ),
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              primary.withValues(alpha: 0.85),
+              secondary.withValues(alpha: 0.85),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: primary.withValues(alpha: 0.12),
+              blurRadius: 24,
+              spreadRadius: 2,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 22,
+              ),
+            ),
+            const SizedBox(height: 16),
+            content,
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: actions,
             ),
           ],
         ),

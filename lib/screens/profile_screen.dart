@@ -314,7 +314,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     // Account & Support actions
                     Card(
                       margin: EdgeInsets.zero,

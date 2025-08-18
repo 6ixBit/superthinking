@@ -310,7 +310,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
           const Positioned.fill(child: IgnorePointer(child: OracleAura())),
           // Date layout - day on left, date on right
           Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
+            top: MediaQuery.of(context).padding.top + 32,
             left: 0,
             right: 0,
             child: Padding(
