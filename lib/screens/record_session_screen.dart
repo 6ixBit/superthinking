@@ -134,48 +134,49 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
 
   void _startLiveSuggestionsLoop() {
     _suggestionTimer?.cancel();
-    // First request ~10–12s, subsequent requests randomized 15–40s
-    _suggestionTimer = Timer(const Duration(seconds: 1), () async {
+    // First request ~10–12s, subsequent requests randomized 15–60s
+    final bool isFirst = _suggestionRequestCount == 0;
+    final int delaySeconds = isFirst
+        ? 10 +
+              math.Random().nextInt(3) // 10..12
+        : 15 + math.Random().nextInt(46); // 15..60
+    _suggestionTimer = Timer(Duration(seconds: delaySeconds), () async {
       if (!mounted || !isRecording) return;
-      // Schedule next tick first to avoid drift
-      final isFirst = _suggestionRequestCount == 0;
-      final nextIn = isFirst
-          ? 10 +
-                math.Random().nextInt(3) // 10..12
-          : 15 + math.Random().nextInt(46); // 15..60
-      _suggestionTimer = Timer(
-        Duration(seconds: nextIn),
-        _startLiveSuggestionsLoop,
-      );
 
       final current = transcript.trim();
-      if (current.isEmpty) return;
-
-      final windowed = current.length > 1000
-          ? current.substring(current.length - 1000)
-          : current;
       // Clear current suggestion right before sending the next request
       setState(() {
         _currentSuggestion = null;
       });
 
-      final suggestions = await LiveSuggestionsService.fetchSuggestions(
-        transcript: windowed,
-      );
-      if (!mounted || !isRecording) return;
-      if (suggestions.isEmpty) return;
+      if (current.isNotEmpty) {
+        final windowed = current.length > 1000
+            ? current.substring(current.length - 1000)
+            : current;
 
-      setState(() {
-        _currentSuggestion = suggestions.first.trim();
-        if (_currentSuggestion != null && _currentSuggestion!.isNotEmpty) {
-          _promptEvents.add({
-            'text': _currentSuggestion,
-            'ts_seconds': _recordElapsed.inSeconds,
-            'source': 'ai_dynamic',
+        final suggestions = await LiveSuggestionsService.fetchSuggestions(
+          transcript: windowed,
+        );
+
+        if (mounted && isRecording && suggestions.isNotEmpty) {
+          setState(() {
+            _currentSuggestion = suggestions.first.trim();
+            if (_currentSuggestion != null && _currentSuggestion!.isNotEmpty) {
+              _promptEvents.add({
+                'text': _currentSuggestion,
+                'ts_seconds': _recordElapsed.inSeconds,
+                'source': 'ai_dynamic',
+              });
+            }
+            _suggestionRequestCount += 1;
           });
         }
-        _suggestionRequestCount += 1;
-      });
+      }
+
+      // Reschedule next run
+      if (mounted && isRecording) {
+        _startLiveSuggestionsLoop();
+      }
     });
   }
 
