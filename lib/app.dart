@@ -26,6 +26,7 @@ import 'supabase/supabase_client.dart';
 import 'screens/dev/dev_catalog_screen.dart';
 import 'screens/session_detail_screen.dart';
 import 'services/notification_service.dart';
+import 'services/app_lifecycle.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -53,6 +54,7 @@ class _SuperThinkingAppState extends State<SuperThinkingApp> {
   void initState() {
     super.initState();
     _setupNotificationHandling();
+    AppLifecycleService.initialize();
   }
 
   void _setupNotificationHandling() {

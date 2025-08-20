@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../supabase/session_api.dart';
 import 'session_detail_screen.dart';
+import '../services/app_lifecycle.dart';
+import '../services/notification_manager.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 
@@ -54,6 +56,10 @@ class _LoadingSessionScreenState extends State<LoadingSessionScreen>
     if (isDone) {
       _pollTimer?.cancel();
       if (!mounted) return;
+      // If app is backgrounded, schedule a local notification to bring user back
+      if (!AppLifecycleService.isInForeground) {
+        await NotificationManager.onSessionAnalysisComplete(widget.sessionId);
+      }
       // Open inside home shell by setting openSessionId, so bottom nav remains
       final app = context.read<AppState>();
       app.setOpenSession(widget.sessionId);
