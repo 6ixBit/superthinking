@@ -14,6 +14,7 @@ import '../theme/app_colors.dart';
 import '../supabase/session_repo.dart';
 import '../services/storage.dart';
 import '../supabase/supabase_client.dart';
+import '../services/live_suggestions_service.dart';
 import 'loading_session_screen.dart';
 
 // Helper for unawaited
@@ -32,12 +33,9 @@ class RecordSessionScreen extends StatefulWidget {
 class _RecordSessionScreenState extends State<RecordSessionScreen> {
   bool isRecording = false;
   String transcript = '';
-  final prompts = const [
-    'Now imagine this turns out better than expected — how?',
-    'What’s the best possible outcome here?',
-    'What resources could help you?',
-  ];
-  int promptIndex = 0;
+  Timer? _suggestionTimer;
+  String? _currentSuggestion;
+  int _suggestionRequestCount = 0;
 
   late final stt.SpeechToText _speech;
   final AudioRecorder _recorder = AudioRecorder();
@@ -108,23 +106,23 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     // Generate a realistic number based on time of day
     final now = DateTime.now();
     final hour = now.hour;
-    
+
     // Base number varies by hour to simulate realistic usage patterns
     int base;
     if (hour >= 6 && hour <= 9) {
       base = 45 + (hour - 6) * 15; // Morning: 45-90
     } else if (hour >= 10 && hour <= 17) {
-      base = 60 + (hour - 10) * 8; // Day: 60-116  
+      base = 60 + (hour - 10) * 8; // Day: 60-116
     } else if (hour >= 18 && hour <= 22) {
       base = 80 + (hour - 18) * 10; // Evening: 80-120
     } else {
       base = 25 + hour * 2; // Night/early morning: 25-45
     }
-    
+
     // Add some variation based on minutes for more dynamic feel
     final variation = (now.minute % 10) - 5;
     final result = base + variation;
-    
+
     return math.max(30, result); // Minimum 30
   }
 
@@ -134,6 +132,56 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     _speech = stt.SpeechToText();
   }
 
+  void _startLiveSuggestionsLoop() {
+    _suggestionTimer?.cancel();
+    // First request ~10–12s, subsequent requests randomized 15–40s
+    _suggestionTimer = Timer(const Duration(seconds: 1), () async {
+      if (!mounted || !isRecording) return;
+      // Schedule next tick first to avoid drift
+      final isFirst = _suggestionRequestCount == 0;
+      final nextIn = isFirst
+          ? 10 +
+                math.Random().nextInt(3) // 10..12
+          : 15 + math.Random().nextInt(26); // 15..40
+      _suggestionTimer = Timer(
+        Duration(seconds: nextIn),
+        _startLiveSuggestionsLoop,
+      );
+
+      final current = transcript.trim();
+      if (current.isEmpty) return;
+
+      final windowed = current.length > 1000
+          ? current.substring(current.length - 1000)
+          : current;
+      // Clear current suggestion right before sending the next request
+      setState(() {
+        _currentSuggestion = null;
+      });
+
+      final suggestions = await LiveSuggestionsService.fetchSuggestions(
+        transcript: windowed,
+      );
+      if (!mounted || !isRecording) return;
+      if (suggestions.isEmpty) return;
+
+      setState(() {
+        _currentSuggestion = suggestions.first.trim();
+        if (_currentSuggestion != null && _currentSuggestion!.isNotEmpty) {
+          _promptEvents.add({
+            'text': _currentSuggestion,
+            'ts_seconds': _recordElapsed.inSeconds,
+            'source': 'ai_dynamic',
+          });
+        }
+        _suggestionRequestCount += 1;
+      });
+    });
+  }
+
+  // Removed queue rotation; we only show the first suggestion per response
+  // void _startQueueRotation() { ... }
+
   Future<void> _startRecording() async {
     print('[RecordSession] Starting recording...');
     setState(() {
@@ -141,6 +189,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       _recordElapsed = Duration.zero;
       transcript = '';
       _promptEvents.clear();
+      _currentSuggestion = null;
     });
 
     _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -205,19 +254,9 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
         localeId: null,
       );
       print('[RecordSession] Speech listening started');
-    }
-
-    for (int i = 0; i < prompts.length && isRecording; i++) {
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted || !isRecording) break;
-      setState(() {
-        promptIndex = i;
-        _promptEvents.add({
-          'text': prompts[i],
-          'ts_seconds': _recordElapsed.inSeconds,
-        });
-      });
-      print('[RecordSession] Showing prompt $i: ${prompts[i]}');
+      _startLiveSuggestionsLoop();
+      // Removed static prompt loop in favor of dynamic, context-aware suggestions
+      // Dynamic suggestions are recorded as prompt events when fetched
     }
   }
 
@@ -225,6 +264,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     if (!isRecording) return;
     print('[RecordSession] Stopping recording...');
     _recordTimer?.cancel();
+    _suggestionTimer?.cancel();
     // Keep recording UI until we navigate to analyzing to avoid a flash
 
     if (_speech.isListening) {
@@ -318,6 +358,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   @override
   void dispose() {
     _recordTimer?.cancel();
+    _suggestionTimer?.cancel();
     super.dispose();
   }
 
@@ -450,7 +491,13 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
                         ),
                       const SizedBox(height: 36),
                       if (isRecording)
-                        _SpeechBubble(text: prompts[promptIndex]),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_currentSuggestion != null)
+                              _SpeechBubble(text: _currentSuggestion!),
+                          ],
+                        ),
                     ],
                   ),
                 ),
