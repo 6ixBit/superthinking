@@ -142,7 +142,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       final nextIn = isFirst
           ? 10 +
                 math.Random().nextInt(3) // 10..12
-          : 15 + math.Random().nextInt(26); // 15..40
+          : 15 + math.Random().nextInt(46); // 15..60
       _suggestionTimer = Timer(
         Duration(seconds: nextIn),
         _startLiveSuggestionsLoop,

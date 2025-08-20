@@ -126,7 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         titleController: titleController,
         descriptionController: descriptionController,
         titleHint: 'Brief description of the bug',
-        descriptionHint: 'Please describe what happened, what you expected, and steps to reproduce the issue...',
+        descriptionHint:
+            'Please describe what happened, what you expected, and steps to reproduce the issue...',
         submitLabel: 'Report Bug',
         type: 'bug',
       ),
@@ -148,18 +149,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
         titleController: titleController,
         descriptionController: descriptionController,
         titleHint: 'Feature name or summary',
-        descriptionHint: 'Please describe the feature you\'d like to see, how it would help you, and any specific details...',
+        descriptionHint:
+            'Please describe the feature you\'d like to see, how it would help you, and any specific details...',
         submitLabel: 'Submit Request',
         type: 'feature_request',
       ),
     );
 
     if (result != null) {
-      await _submitFeedback('feature_request', result['title']!, result['description']!);
+      await _submitFeedback(
+        'feature_request',
+        result['title']!,
+        result['description']!,
+      );
     }
   }
 
-  Future<void> _submitFeedback(String type, String title, String description) async {
+  Future<void> _submitFeedback(
+    String type,
+    String title,
+    String description,
+  ) async {
     try {
       final user = SupabaseService.client.auth.currentUser;
       if (user == null) return;
@@ -180,9 +190,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              type == 'bug' 
-                ? 'Bug report submitted successfully!' 
-                : 'Feature request submitted successfully!'
+              type == 'bug'
+                  ? 'Bug report submitted successfully!'
+                  : 'Feature request submitted successfully!',
             ),
             backgroundColor: AppColors.primary,
           ),
@@ -266,48 +276,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ],
                         ),
-                        child: Row(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.7),
-                              ),
-                              child: const Icon(
-                                Icons.psychology_alt_outlined,
-                                size: 32,
-                                color: Colors.black87,
-                              ),
+                            // Container(
+                            //   width: 64,
+                            //   height: 64,
+                            //   decoration: BoxDecoration(
+                            //     shape: BoxShape.circle,
+                            //     color: Colors.white.withOpacity(0.7),
+                            //   ),
+                            //   child: const Icon(
+                            //     Icons.psychology_alt_outlined,
+                            //     size: 32,
+                            //     color: Colors.black87,
+                            //   ),
+                            // ),
+                            // const SizedBox(height: 12),
+                            Text(
+                              _dominantThinkingStyle ?? 'Thinking Style',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 20,
+                                  ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _dominantThinkingStyle ?? 'Thinking Style',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 20,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _thinkingStyleSubtitle(
-                                      _dominantThinkingStyle!,
-                                    ),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: Colors.black87),
-                                  ),
-                                ],
-                              ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _thinkingStyleSubtitle(_dominantThinkingStyle!),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.black87),
                             ),
                           ],
                         ),
@@ -751,9 +752,7 @@ class _FeedbackDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
@@ -807,7 +806,10 @@ class _FeedbackDialog extends StatelessWidget {
                   ),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.95),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
                 maxLength: 200,
               ),
@@ -824,7 +826,10 @@ class _FeedbackDialog extends StatelessWidget {
                   ),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.95),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
                 maxLines: 4,
                 maxLength: 1000,
@@ -837,7 +842,10 @@ class _FeedbackDialog extends StatelessWidget {
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -848,26 +856,32 @@ class _FeedbackDialog extends StatelessWidget {
                     onPressed: () {
                       final title = titleController.text.trim();
                       final description = descriptionController.text.trim();
-                      
+
                       if (title.isEmpty || description.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Please fill in both title and description'),
+                            content: Text(
+                              'Please fill in both title and description',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );
                         return;
                       }
-                      
-                      Navigator.of(context).pop({
-                        'title': title,
-                        'description': description,
-                      });
+
+                      Navigator.of(
+                        context,
+                      ).pop({'title': title, 'description': description});
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: type == 'bug' ? Colors.red : AppColors.primary,
+                      backgroundColor: type == 'bug'
+                          ? Colors.red
+                          : AppColors.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
