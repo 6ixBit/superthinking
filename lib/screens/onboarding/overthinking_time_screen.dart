@@ -151,7 +151,7 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (!kReleaseMode)
+              if (false && !kReleaseMode)
                 TextButton(
                   onPressed: () async {
                     if (!mounted) return;

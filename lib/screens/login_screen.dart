@@ -235,30 +235,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       background: Colors.black,
                       foreground: Colors.white,
                       icon: const Icon(Icons.apple, color: Colors.white),
-                      label: _loading ? 'Signing in…' : 'Continue with Apple',
+                      label: _loading ? 'Signing in…' : 'Sign in with Apple',
                     ),
-                    const SizedBox(height: 12),
-                    _SignInButton(
-                      onPressed: _loading
-                          ? null
-                          : () => _signInOAuth(sb.OAuthProvider.google),
-                      background: Colors.white,
-                      foreground: Colors.black,
-                      borderColor: Colors.black.withOpacity(0.15),
-                      icon: const Icon(Icons.g_mobiledata, size: 22),
-                      label: _loading ? 'Signing in…' : 'Continue with Google',
-                    ),
-                    const SizedBox(height: 12),
-                    _SignInButton(
-                      onPressed: _loading
-                          ? null
-                          : () =>
-                                Navigator.of(context).pushReplacementNamed('/'),
-                      background: AppColors.primary,
-                      foreground: Colors.white,
-                      icon: const Icon(Icons.bolt, color: Colors.white),
-                      label: 'Super Login (skip)',
-                    ),
+                    // Google Sign-In hidden for launch
+                    const SizedBox.shrink(),
+                    // Super Login hidden for launch
+                    const SizedBox.shrink(),
                   ],
                 ),
               ),
