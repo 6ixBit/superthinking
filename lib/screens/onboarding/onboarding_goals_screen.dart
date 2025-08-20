@@ -17,7 +17,7 @@ class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
   final List<String> _options = const [
     'Turn problems into solutions',
     'Achieve mental clarity',
-    'Understanding your thought process better'
+    'Understanding your thought process better',
   ];
 
   Future<void> _onContinue() async {
@@ -142,16 +142,18 @@ class _OptionButton extends StatelessWidget {
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  if (emoji != null)
-                    Text(emoji!, style: const TextStyle(fontSize: 16)),
-                  if (emoji != null) const SizedBox(width: 8),
-                  Flexible(child: Text(label)),
-                ],
+              if (emoji != null)
+                Text(emoji!, style: const TextStyle(fontSize: 16)),
+              if (emoji != null) const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               if (selected)
                 const Icon(Icons.check_circle, color: AppColors.primary)
               else
