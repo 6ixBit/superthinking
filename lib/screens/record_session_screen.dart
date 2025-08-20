@@ -506,40 +506,40 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
             ),
           ),
           if (isRecording) const SizedBox.shrink(),
-          // Community indicator
-          Positioned(
-            bottom: MediaQuery.of(context).padding.bottom + 100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '${_generateActiveUserCount()}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF8B7355),
-                        letterSpacing: -0.2,
-                        fontSize: 16,
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' people are SuperThinking right now',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF8B7355),
-                        letterSpacing: -0.2,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          // Community indicator (temporarily hidden)
+          // Positioned(
+          //   bottom: MediaQuery.of(context).padding.bottom + 100,
+          //   left: 0,
+          //   right: 0,
+          //   child: Center(
+          //     child: RichText(
+          //       text: TextSpan(
+          //         children: [
+          //           TextSpan(
+          //             text: '${_generateActiveUserCount()}',
+          //             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          //               fontStyle: FontStyle.italic,
+          //               fontWeight: FontWeight.w700,
+          //               color: const Color(0xFF8B7355),
+          //               letterSpacing: -0.2,
+          //               fontSize: 16,
+          //             ),
+          //           ),
+          //           TextSpan(
+          //             text: ' people are SuperThinking right now',
+          //             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          //               fontStyle: FontStyle.italic,
+          //               fontWeight: FontWeight.w500,
+          //               color: const Color(0xFF8B7355),
+          //               letterSpacing: -0.2,
+          //               fontSize: 16,
+          //             ),
+          //           ),
+          //         ],
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
