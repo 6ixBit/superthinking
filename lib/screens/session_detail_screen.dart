@@ -894,6 +894,475 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     }
   }
 
+  // New: Header builder (close button + title)
+  Widget _buildHeader() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        10,
+        MediaQuery.of(context).padding.top + 16,
+        10,
+        8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () {
+                  final app = context.read<AppState>();
+                  if (app.openSessionId != null) {
+                    app.setOpenSession(null);
+                    return;
+                  }
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                tooltip: 'Close',
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 180),
+                    child: TabBar(
+                      labelColor: Colors.black,
+                      unselectedLabelColor: Colors.black54,
+                      labelStyle: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                      unselectedLabelStyle: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium,
+                      indicatorColor: Colors.transparent,
+                      dividerColor: Colors.transparent,
+                      tabs: const [
+                        Tab(text: 'Insights'),
+                        Tab(text: 'Action'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              PopupMenuButton<String>(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onSelected: (value) async {
+                  if (value == 'delete') {
+                    await _confirmAndDelete();
+                  } else if (value == 'edit_title') {
+                    if (_record == null) return;
+                    final controller = TextEditingController(
+                      text: _record!.title ?? '',
+                    );
+                    final newTitle = await showDialog<String>(
+                      context: context,
+                      builder: (ctx) => _StyledDialog(
+                        title: 'Edit title',
+                        content: TextField(
+                          controller: controller,
+                          autofocus: true,
+                          textInputAction: TextInputAction.done,
+                          decoration: InputDecoration(
+                            hintText: 'Session title',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.95),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () =>
+                                Navigator.of(ctx).pop(controller.text.trim()),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Save'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (newTitle == null) return;
+                    final trimmed = newTitle.trim();
+                    if (trimmed.isEmpty) return;
+                    final ok = await SessionApi.updateSessionTitle(
+                      sessionId: _record!.id,
+                      title: trimmed,
+                    );
+                    if (ok && mounted) {
+                      setState(() {
+                        _record = SessionRecord(
+                          id: _record!.id,
+                          createdAt: _record!.createdAt,
+                          durationSeconds: _record!.durationSeconds,
+                          ideas: _record!.ideas,
+                          actions: _record!.actions,
+                          transcript: _record!.transcript,
+                          processingStatus: _record!.processingStatus,
+                          analysis: _record!.analysis,
+                          title: trimmed,
+                        );
+                      });
+                    }
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(
+                    value: 'edit_title',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.edit_outlined),
+                        SizedBox(width: 8),
+                        Text('Edit title'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.delete_outline, color: Colors.red),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Delete session',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'Options',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // New: Insights tab content
+  Widget _buildInsightsTab() {
+    final duration =
+        widget.initialDurationSeconds ?? _record?.durationSeconds ?? 0;
+    final transcript = _getDisplayTranscript();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 96),
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.timer_outlined, size: 18, color: Colors.black54),
+            const SizedBox(width: 6),
+            Text(
+              _formatDuration(duration),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            const Icon(Icons.calendar_today_outlined, color: Colors.black54),
+            const SizedBox(width: 6),
+            Text(
+              _formatSessionDate(_record?.createdAt),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+            ),
+            const Spacer(),
+            Text(
+              _formatSessionTime(_record?.createdAt),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+        if (_record?.analysis?.gentleAdvice != null &&
+            _record!.analysis!.gentleAdvice.trim().isNotEmpty) ...[
+          Stack(
+            clipBehavior: Clip.none,
+            children: [_ThoughtBubble(text: _record!.analysis!.gentleAdvice)],
+          ),
+          const SizedBox(height: 32),
+        ],
+        if (_record?.analysis != null) ...[
+          _buildShiftScoreSection(),
+          const SizedBox(height: 40),
+          Text(
+            'Session Insights',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          if (_record!.analysis!.summaryAfter.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '🗝️ Key Insights',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _record!.analysis!.summaryAfter,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(height: 1.35),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ],
+        if (transcript != null && transcript.isNotEmpty) ...[
+          const SizedBox(height: 40),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Your words',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (_record?.audioUrl != null) ...[
+                        const Spacer(),
+                        IconButton(
+                          onPressed: _togglePlayPause,
+                          icon: Icon(
+                            _isPlaying
+                                ? Icons.pause_circle_filled
+                                : Icons.play_circle_filled,
+                            size: 24,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 60,
+                          height: 20,
+                          child: _buildAudioVisualizer(),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatDurationFromDuration(_duration),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w500,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '"${_getTruncatedTranscript(transcript)}"',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.black54,
+                      height: 1.35,
+                    ),
+                  ),
+                  if (_shouldTruncateTranscript(transcript)) ...[
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _transcriptExpanded = !_transcriptExpanded;
+                        });
+                      },
+                      child: Text(
+                        _transcriptExpanded ? 'Read less' : 'Read more',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // New: Action tab content
+  Widget _buildActionsTab() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 96),
+      children: [
+        if (_record?.analysis != null) ...[
+          _buildThinkingStyleBadge(),
+          const SizedBox(height: 24),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Your next steps',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Add action',
+              onPressed: () => _showAddActionDialog(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_record != null && _record!.actions.isNotEmpty) ...[
+          ...List.generate(_record!.actions.length, (i) {
+            final action = _record!.actions[i];
+            final done = _completed.contains(i);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Dismissible(
+                key: Key('action_${action.id}'),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.delete,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                onDismissed: (direction) async {
+                  await _deleteActionItem(i);
+                },
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _toggleStep(i),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            done ? Icons.check_circle : Icons.circle_outlined,
+                            color: done ? AppColors.primary : Colors.black26,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              action.description,
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    decoration: done
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none,
+                                    color: done
+                                        ? Colors.black45
+                                        : Colors.black87,
+                                    decorationThickness: 2,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ] else ...[
+          Text(
+            'No actions generated yet.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final duration =
@@ -910,519 +1379,31 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final content = ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        // Header section with close button and session title
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            10,
-            75,
-            10,
-            0,
-          ), // Added top padding for status bar
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Close button and title row
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () {
-                      final app = context.read<AppState>();
-                      if (app.openSessionId != null) {
-                        app.setOpenSession(null);
-                        return;
-                      }
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    tooltip: 'Close',
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _record?.title ?? 'Session Summary',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    onSelected: (value) async {
-                      if (value == 'delete') {
-                        await _confirmAndDelete();
-                      } else if (value == 'edit_title') {
-                        if (_record == null) return;
-                        final controller = TextEditingController(
-                          text: _record!.title ?? '',
-                        );
-                        final newTitle = await showDialog<String>(
-                          context: context,
-                          builder: (ctx) => _StyledDialog(
-                            title: 'Edit title',
-                            content: TextField(
-                              controller: controller,
-                              autofocus: true,
-                              textInputAction: TextInputAction.done,
-                              decoration: InputDecoration(
-                                hintText: 'Session title',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
-                                ),
-                                filled: true,
-                                fillColor: Colors.white.withValues(alpha: 0.95),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Text('Cancel'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.of(
-                                  ctx,
-                                ).pop(controller.text.trim()),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Text('Save'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (newTitle == null) return;
-                        final trimmed = newTitle.trim();
-                        if (trimmed.isEmpty) return;
-                        final ok = await SessionApi.updateSessionTitle(
-                          sessionId: _record!.id,
-                          title: trimmed,
-                        );
-                        if (ok && mounted) {
-                          setState(() {
-                            _record = SessionRecord(
-                              id: _record!.id,
-                              createdAt: _record!.createdAt,
-                              durationSeconds: _record!.durationSeconds,
-                              ideas: _record!.ideas,
-                              actions: _record!.actions,
-                              transcript: _record!.transcript,
-                              processingStatus: _record!.processingStatus,
-                              analysis: _record!.analysis,
-                              title: trimmed,
-                            );
-                          });
-                        }
-                      }
-                    },
-                    itemBuilder: (ctx) => [
-                      PopupMenuItem(
-                        value: 'edit_title',
-                        child: Row(
-                          children: const [
-                            Icon(Icons.edit_outlined),
-                            SizedBox(width: 8),
-                            Text('Edit title'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.delete_outline, color: Colors.red),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Delete session',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    icon: const Icon(Icons.more_vert),
-                    tooltip: 'Options',
-                  ),
-                ],
+    // Tabbed content
+    final content = DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          _buildHeader(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            child: Center(
+              child: Text(
+                _record?.title ?? 'Session Summary',
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
-            ],
+            ),
           ),
-        ),
-        // Rest of content with padding and bottom spacing to avoid nav overlap
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 30, 20, 96),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.timer_outlined,
-                    size: 18,
-                    color: Colors.black54,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _formatDuration(duration),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today_outlined,
-                    color: Colors.black54,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _formatSessionDate(_record?.createdAt),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _formatSessionTime(_record?.createdAt),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.black54),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              if (_record?.analysis?.gentleAdvice != null &&
-                  _record!.analysis!.gentleAdvice.trim().isNotEmpty) ...[
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    _ThoughtBubble(text: _record!.analysis!.gentleAdvice),
-                  ],
-                ),
-                const SizedBox(height: 32),
-              ],
-
-              // Next Steps section
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Your next steps',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    tooltip: 'Add action',
-                    onPressed: () => _showAddActionDialog(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (_record != null && _record!.actions.isNotEmpty) ...[
-                ...List.generate(_record!.actions.length, (i) {
-                  final action = _record!.actions[i];
-                  final done = _completed.contains(i);
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Dismissible(
-                      key: Key('action_${action.id}'),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                      onDismissed: (direction) async {
-                        await _deleteActionItem(i);
-                      },
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => _toggleStep(i),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  done
-                                      ? Icons.check_circle
-                                      : Icons.circle_outlined,
-                                  color: done
-                                      ? AppColors.primary
-                                      : Colors.black26,
-                                  size: 22,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    action.description,
-                                    style: Theme.of(context).textTheme.bodyLarge
-                                        ?.copyWith(
-                                          decoration: done
-                                              ? TextDecoration.lineThrough
-                                              : TextDecoration.none,
-                                          color: done
-                                              ? Colors.black45
-                                              : Colors.black87,
-                                          decorationThickness: 2,
-                                        ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ] else ...[
-                Text(
-                  'No actions generated yet.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
-                ),
-              ],
-
-              if (_record?.analysis != null) ...[
-                const SizedBox(height: 32),
-                _buildThinkingStyleBadge(),
-                const SizedBox(height: 24),
-                _buildShiftScoreSection(),
-              ],
-
-              const SizedBox(height: 40),
-
-              // Analysis insights (if available)
-              if (_record?.analysis != null) ...[
-                Text(
-                  'Session Insights',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 12),
-                if (_record!.analysis!.summaryAfter.isNotEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.green.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '🗝️ Key Insights',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.green.shade700,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _record!.analysis!.summaryAfter,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(height: 1.35),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (_record!.analysis!.strengthHighlight.isNotEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '💪 Strength Highlight',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _record!.analysis!.strengthHighlight,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(height: 1.35),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-
-              // Transcript section (moved to bottom)
-              if (transcript != null && transcript.isNotEmpty) ...[
-                const SizedBox(height: 40),
-
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(
-                      0xFFFFFFFF,
-                    ), // Card color from design guide
-                    borderRadius: BorderRadius.circular(
-                      16,
-                    ), // Standard card radius
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(
-                          0.04,
-                        ), // Generic card shadow
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header with audio controls
-                        Row(
-                          children: [
-                            Text(
-                              'Your words',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            if (_record?.audioUrl != null) ...[
-                              const Spacer(),
-                              IconButton(
-                                onPressed: _togglePlayPause,
-                                icon: Icon(
-                                  _isPlaying
-                                      ? Icons.pause_circle_filled
-                                      : Icons.play_circle_filled,
-                                  size: 24,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Audio visualizer
-                              Container(
-                                width: 60,
-                                height: 20,
-                                child: _buildAudioVisualizer(),
-                              ),
-                              const SizedBox(width: 8),
-                              // Duration
-                              Text(
-                                _formatDurationFromDuration(_duration),
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Colors.black54,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        Text(
-                          '"${_getTruncatedTranscript(transcript)}"',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Colors.black54, height: 1.35),
-                        ),
-                        if (_shouldTruncateTranscript(transcript)) ...[
-                          const SizedBox(height: 12),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _transcriptExpanded = !_transcriptExpanded;
-                              });
-                            },
-                            child: Text(
-                              _transcriptExpanded ? 'Read less' : 'Read more',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ],
+          Expanded(
+            child: TabBarView(
+              children: [_buildInsightsTab(), _buildActionsTab()],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
 
     return WillPopScope(
