@@ -58,6 +58,7 @@ dependencies:
   timezone: ^0.9.4
   audioplayers: ^5.2.1
   google_fonts: ^6.1.0
+  wakelock_plus: ^1.2.5
 
 dev_dependencies:
   flutter_test:

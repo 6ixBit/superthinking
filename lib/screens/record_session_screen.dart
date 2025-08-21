@@ -8,6 +8,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../state/app_state.dart';
 import '../theme/app_colors.dart';
@@ -192,6 +193,15 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
 
   Future<void> _startRecording() async {
     print('[RecordSession] Starting recording...');
+
+    // Enable wake lock to keep screen on during recording
+    try {
+      await WakelockPlus.enable();
+      print('[RecordSession] Wake lock enabled');
+    } catch (e) {
+      print('[RecordSession] Failed to enable wake lock: $e');
+    }
+
     setState(() {
       isRecording = true;
       _isStopping = false;
@@ -291,6 +301,15 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     if (!isRecording || _isStopping) return;
     _isStopping = true;
     print('[RecordSession] Stopping recording...');
+
+    // Disable wake lock when recording stops
+    try {
+      await WakelockPlus.disable();
+      print('[RecordSession] Wake lock disabled');
+    } catch (e) {
+      print('[RecordSession] Failed to disable wake lock: $e');
+    }
+
     _recordTimer?.cancel();
     _suggestionTimer?.cancel();
     // Keep recording UI until we navigate to analyzing to avoid a flash
@@ -418,6 +437,12 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   void dispose() {
     _recordTimer?.cancel();
     _suggestionTimer?.cancel();
+
+    // Ensure wake lock is disabled when leaving the screen
+    WakelockPlus.disable().catchError((e) {
+      print('[RecordSession] Failed to disable wake lock in dispose: $e');
+    });
+
     super.dispose();
   }
 

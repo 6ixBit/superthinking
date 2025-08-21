@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../supabase/session_api.dart';
 import '../theme/app_colors.dart';
+import '../supabase/pattern_analysis_api.dart';
+import '../supabase/pattern_exploration_insights_api.dart';
+import 'pattern_exploration_screen.dart';
 import 'loading_session_screen.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
@@ -14,12 +17,14 @@ class SessionDetailScreen extends StatefulWidget {
   final String sessionId;
   final String? initialTranscript;
   final int? initialDurationSeconds;
+  final int? initialTabIndex;
 
   const SessionDetailScreen({
     super.key,
     required this.sessionId,
     this.initialTranscript,
     this.initialDurationSeconds,
+    this.initialTabIndex,
   });
 
   @override
@@ -35,6 +40,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   final Set<int> _completed = <int>{};
   bool _transcriptExpanded = false;
   Timer? _refreshTimer;
+
+  // Pattern analysis state
+  PatternAnalysisResult? _patternAnalysis;
+  bool _isAnalyzingPatterns = false;
+  bool _patternSectionDismissed = false;
+
+  // Pattern exploration insights state
+  PatternExplorationInsight? _explorationInsights;
 
   // Audio player
   AudioPlayer? _audioPlayer;
@@ -84,6 +97,17 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         (rec.processingStatus == 'processing' ||
             rec.processingStatus == 'pending')) {
       _startPeriodicRefresh();
+    }
+
+    // Trigger pattern analysis if session is completed
+    if (rec != null && rec.processingStatus == 'completed') {
+      _analyzePatterns();
+      _loadExplorationInsights();
+    }
+
+    // If we're starting on the Action tab (from pattern exploration), reload insights
+    if (widget.initialTabIndex == 1) {
+      _loadExplorationInsights();
     }
   }
 
@@ -164,6 +188,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
         // Send notification for session analysis completion
         NotificationManager.onSessionAnalysisComplete(widget.sessionId);
+
+        // Trigger pattern analysis now that session is completed
+        _analyzePatterns();
+
+        // Load exploration insights
+        _loadExplorationInsights();
       }
     });
   }
@@ -1294,10 +1324,13 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 30, 20, 96),
       children: [
-        if (_record?.analysis != null) ...[
-          _buildThinkingStyleBadge(),
-          const SizedBox(height: 24),
-        ],
+        // Commented out for now while implementing pattern detection
+        // if (_record?.analysis != null) ...[
+        //   _buildThinkingStyleBadge(),
+        //   const SizedBox(height: 24),
+        // ],
+        _buildPatternDetectionSection(),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -1320,6 +1353,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           ...List.generate(_record!.actions.length, (i) {
             final action = _record!.actions[i];
             final done = _completed.contains(i);
+            final isFromDeepExploration = action.source == 'deeper_exploration';
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Dismissible(
@@ -1348,6 +1383,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
+                      border: isFromDeepExploration
+                          ? Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              width: 1,
+                            )
+                          : null,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -1373,11 +1414,24 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                                         : TextDecoration.none,
                                     color: done
                                         ? Colors.black45
+                                        : isFromDeepExploration
+                                        ? AppColors.primary
                                         : Colors.black87,
                                     decorationThickness: 2,
+                                    fontWeight: isFromDeepExploration
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
                                   ),
                             ),
                           ),
+                          if (isFromDeepExploration) ...[
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.psychology,
+                              size: 16,
+                              color: AppColors.primary.withOpacity(0.7),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1394,8 +1448,286 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
           ),
         ],
+        const SizedBox(height: 16),
+        _buildDeeperInsightsSection(),
       ],
     );
+  }
+
+  // Pattern detection section for deeper insights
+  Widget _buildPatternDetectionSection() {
+    // Don't show if dismissed or still analyzing
+    if (_patternSectionDismissed) return const SizedBox.shrink();
+
+    // Show loading state while analyzing
+    if (_isAnalyzingPatterns) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Analyzing thinking patterns...',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Don't show if no patterns detected
+    if (_patternAnalysis == null || !_patternAnalysis!.hasPatterns) {
+      return const SizedBox.shrink();
+    }
+
+    final pattern = _patternAnalysis!.primaryPattern!;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.psychology, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Pattern Detected: ${_formatPatternType(pattern.type)}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            pattern.description,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.black87),
+          ),
+          if (_patternAnalysis!.insightPreview != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _patternAnalysis!.insightPreview!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.black54,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: _explorationInsights == null
+                ? ElevatedButton(
+                    onPressed: () {
+                      _startDeeperExploration();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Explore This'),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadExplorationInsights() async {
+    if (_record?.id == null) return;
+
+    try {
+      final insights =
+          await PatternExplorationInsightsApi.getInsightsForSession(
+            _record!.id,
+          );
+      if (mounted) {
+        setState(() {
+          _explorationInsights = insights;
+        });
+      }
+    } catch (e) {
+      print('Failed to load exploration insights: $e');
+    }
+  }
+
+  String _formatPatternType(String type) {
+    switch (type.toLowerCase()) {
+      case 'rumination':
+        return 'Rumination';
+      case 'catastrophizing':
+        return 'Catastrophizing';
+      case 'perfectionism':
+        return 'Perfectionism';
+      case 'avoidance':
+        return 'Avoidance';
+      case 'overthinking':
+        return 'Overthinking';
+      case 'self_doubt':
+        return 'Self-Doubt';
+      case 'people_pleasing':
+        return 'People-Pleasing';
+      case 'comparison':
+        return 'Comparison';
+      case 'procrastination':
+        return 'Procrastination';
+      case 'decision_paralysis':
+        return 'Decision Paralysis';
+      default:
+        return type
+            .replaceAll('_', ' ')
+            .split(' ')
+            .map(
+              (word) => word.isNotEmpty
+                  ? word[0].toUpperCase() + word.substring(1)
+                  : word,
+            )
+            .join(' ');
+    }
+  }
+
+  Future<void> _startDeeperExploration() async {
+    if (_patternAnalysis == null || _record?.id == null) return;
+
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => PatternExplorationScreen(
+          sessionId: _record!.id,
+          patternAnalysis: _patternAnalysis!,
+        ),
+      ),
+    );
+
+    // If exploration succeeded, switch to Action tab and reload insights
+    if (result == true && mounted) {
+      final tabController = DefaultTabController.of(context);
+      if (tabController != null) {
+        tabController.animateTo(1); // Action tab
+      }
+      await _loadExplorationInsights();
+      setState(() {});
+    }
+  }
+
+  Widget _buildDeeperInsightsSection() {
+    if (_explorationInsights == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.purple.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.purple.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb, color: Colors.purple.shade600, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Deeper Insights',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.purple.shade600,
+                ),
+              ),
+            ],
+          ),
+          if (_explorationInsights!.insight != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _explorationInsights!.insight!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.black87,
+                height: 1.4,
+              ),
+            ),
+          ],
+          // key_realization hidden for now
+          if (_explorationInsights!.encouragement != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _explorationInsights!.encouragement!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.green.shade800,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _analyzePatterns() async {
+    if (_record?.id == null || _isAnalyzingPatterns) return;
+
+    setState(() {
+      _isAnalyzingPatterns = true;
+    });
+
+    try {
+      final result = await PatternAnalysisApi.analyzeSessionPatterns(
+        _record!.id,
+      );
+      if (mounted) {
+        setState(() {
+          _patternAnalysis = result;
+          _isAnalyzingPatterns = false;
+        });
+      }
+    } catch (e) {
+      print('Pattern analysis failed: $e');
+      if (mounted) {
+        setState(() {
+          _isAnalyzingPatterns = false;
+        });
+      }
+    }
   }
 
   @override
@@ -1417,6 +1749,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     // Tabbed content
     final content = DefaultTabController(
       length: 2,
+      initialIndex: widget.initialTabIndex ?? 0,
       child: Column(
         children: [
           _buildHeader(),
