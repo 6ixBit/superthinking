@@ -44,6 +44,10 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   Timer? _recordTimer;
   final List<Map<String, dynamic>> _promptEvents = [];
 
+  // New: track current recording file path and pre-created session id
+  String? _recordingFilePath;
+  String? _sessionId;
+
   String _formatDuration(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -209,6 +213,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
         dir.path,
         'session_${DateTime.now().millisecondsSinceEpoch}.m4a',
       );
+      _recordingFilePath = path;
       print('[RecordSession] Starting file recording to: $path');
       await _recorder.start(
         const RecordConfig(encoder: AudioEncoder.aacLc),
@@ -217,6 +222,19 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       print('[RecordSession] File recording started successfully');
     } else {
       print('[RecordSession] WARNING: No microphone permission!');
+    }
+
+    // Pre-create session row so navigation on stop is instant
+    try {
+      print('[RecordSession] Pre-creating pending session...');
+      _sessionId = await SessionRepo.createPendingSession(
+        durationSeconds: 0,
+        promptsShown: const [],
+      );
+      print('[RecordSession] Pre-created session id: $_sessionId');
+    } catch (e) {
+      print('[RecordSession] ERROR pre-creating session: $e');
+      _sessionId = null; // fallback handled on stop
     }
 
     // Initialize speech recognition
@@ -268,92 +286,123 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     _suggestionTimer?.cancel();
     // Keep recording UI until we navigate to analyzing to avoid a flash
 
-    if (_speech.isListening) {
-      print('[RecordSession] Stopping speech recognition...');
-      await _speech.stop();
-    }
+    // Kick off heavy work in the background to avoid UI stall
+    final String? sessionId = _sessionId;
+    final String? recordingPath = _recordingFilePath;
+    final int durationSec = _recordElapsed.inSeconds;
+    final List<Map<String, dynamic>> promptEvents =
+        List<Map<String, dynamic>>.from(_promptEvents);
 
-    // Stop file recording and upload
-    String? audioFilePath;
-    if (await _recorder.isRecording()) {
-      print('[RecordSession] Stopping file recording...');
-      audioFilePath = await _recorder.stop();
-      print('[RecordSession] File recording stopped. Path: $audioFilePath');
-    } else {
-      print(
-        '[RecordSession] WARNING: Recorder was not recording when we tried to stop',
-      );
-    }
+    unawaited(() async {
+      try {
+        if (_speech.isListening) {
+          print('[RecordSession] Stopping speech recognition (background)...');
+          await _speech.stop();
+        }
 
+        if (await _recorder.isRecording()) {
+          print('[RecordSession] Stopping file recording (background)...');
+          await _recorder.stop();
+          print('[RecordSession] File recording stopped');
+        }
+
+        if (sessionId == null) {
+          // Fallback: create session now if pre-create failed
+          print('[RecordSession] Fallback: creating session on stop...');
+          final createdId = await SessionRepo.createPendingSession(
+            durationSeconds: 0,
+            promptsShown: const [],
+          );
+          print('[RecordSession] Fallback session id: $createdId');
+          // We cannot change the already navigated screen param, but polling will still work
+        }
+
+        if (recordingPath != null && sessionId != null) {
+          print('[RecordSession] Updating session meta (duration/prompts)...');
+          await SupabaseService.client
+              .from('sessions')
+              .update({
+                'duration_seconds': durationSec,
+                'prompts_shown': promptEvents,
+              })
+              .eq('id', sessionId);
+
+          print('[RecordSession] Uploading audio file (background)...');
+          final user = SupabaseService.client.auth.currentUser;
+          if (user == null) {
+            print('[RecordSession] ERROR: No authenticated user found!');
+            return;
+          }
+          final url = await StorageService.uploadAudioFile(
+            file: File(recordingPath),
+            userId: user.id,
+            sessionId: sessionId,
+          );
+          print('[RecordSession] Upload successful. URL: $url');
+
+          print('[RecordSession] Attaching audio and starting processing...');
+          await SessionRepo.attachAudioAndStartProcessing(
+            sessionId: sessionId,
+            audioUrl: url,
+          );
+          print('[RecordSession] Processing started successfully');
+        }
+      } catch (e, stackTrace) {
+        print('[RecordSession] ERROR during background finalize/upload: $e');
+        print('[RecordSession] Stack trace: $stackTrace');
+        if (sessionId != null) {
+          // Mark session as failed for visibility
+          try {
+            await SupabaseService.client
+                .from('sessions')
+                .update({'processing_status': 'failed'})
+                .eq('id', sessionId);
+          } catch (_) {}
+        }
+      }
+    }());
+
+    // Update local state and navigate immediately to analyzing screen
     context.read<AppState>().setTranscript(transcript);
     context.read<AppState>().synthesizeMagic();
-    try {
-      print('[RecordSession] Creating pending session...');
-      final sessionId = await SessionRepo.createPendingSession(
-        durationSeconds: _recordElapsed.inSeconds,
-        promptsShown: List<Map<String, dynamic>>.from(_promptEvents),
+
+    // Ensure we have a session id to show analyzing screen
+    if (_sessionId != null && mounted) {
+      context.read<AppState>().setSessionTranscript(_sessionId!, transcript);
+      context.read<AppState>().setOpenSession(_sessionId!);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => LoadingSessionScreen(sessionId: _sessionId!),
+        ),
       );
-      print('[RecordSession] Session created with ID: $sessionId');
+      return;
+    }
+
+    // Fallback: if we do not have a session id yet, create one then navigate
+    try {
+      print('[RecordSession] Creating pending session (fallback)...');
+      final createdId = await SessionRepo.createPendingSession(
+        durationSeconds: durationSec,
+        promptsShown: promptEvents,
+      );
+      _sessionId = createdId;
       if (!mounted) return;
-      context.read<AppState>().setSessionTranscript(sessionId, transcript);
-      context.read<AppState>().setOpenSession(sessionId);
-
-      // Upload and trigger processing in background
-      if (audioFilePath != null) {
-        print(
-          '[RecordSession] Starting background upload for audio file: $audioFilePath',
-        );
-        unawaited(() async {
-          try {
-            print('[RecordSession] Getting current user...');
-            final user = SupabaseService.client.auth.currentUser;
-            if (user == null) {
-              print('[RecordSession] ERROR: No authenticated user found!');
-              return;
-            }
-            print('[RecordSession] User ID: ${user.id}');
-
-            print('[RecordSession] Uploading audio file...');
-            final url = await StorageService.uploadAudioFile(
-              file: File(audioFilePath!),
-              userId: user.id,
-              sessionId: sessionId,
-            );
-            print('[RecordSession] Upload successful. URL: $url');
-
-            print('[RecordSession] Attaching audio and starting processing...');
-            await SessionRepo.attachAudioAndStartProcessing(
-              sessionId: sessionId,
-              audioUrl: url,
-            );
-            print('[RecordSession] Processing started successfully');
-          } catch (e, stackTrace) {
-            print('[RecordSession] ERROR in background upload: $e');
-            print('[RecordSession] Stack trace: $stackTrace');
-          }
-        }());
-      } else {
-        print('[RecordSession] WARNING: No audio file path to upload');
-      }
-      // Navigate directly to our existing analyzing screen for this session
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => LoadingSessionScreen(sessionId: sessionId),
-          ),
-        );
-      }
+      context.read<AppState>().setSessionTranscript(createdId, transcript);
+      context.read<AppState>().setOpenSession(createdId);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => LoadingSessionScreen(sessionId: createdId),
+        ),
+      );
+      // Background work (stop/upload/process) already running
       return;
     } catch (e, stackTrace) {
-      print('[RecordSession] ERROR creating session: $e');
+      print('[RecordSession] ERROR creating session (fallback): $e');
       print('[RecordSession] Stack trace: $stackTrace');
-      // On error, go home
       if (mounted) {
         Navigator.of(context).pushNamed('/home');
       }
     }
-    if (!mounted) return;
-    Navigator.of(context).pushNamed('/home');
   }
 
   @override
