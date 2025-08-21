@@ -951,6 +951,10 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         ),
                         indicatorPadding: const EdgeInsets.all(4),
                         dividerColor: Colors.transparent,
+                        overlayColor: MaterialStateProperty.all(
+                          Colors.transparent,
+                        ),
+                        splashFactory: NoSplash.splashFactory,
                         tabs: const [
                           Tab(text: 'Insights'),
                           Tab(text: 'Action'),
