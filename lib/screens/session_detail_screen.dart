@@ -926,7 +926,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               Expanded(
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 220),
+                    constraints: const BoxConstraints(maxWidth: 260),
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.9),
@@ -936,28 +936,44 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                           width: 1,
                         ),
                       ),
-                      child: TabBar(
-                        labelColor: AppColors.primary,
-                        unselectedLabelColor: Colors.black54,
-                        labelStyle: Theme.of(context).textTheme.bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                        unselectedLabelStyle: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w400),
-                        indicator: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        indicatorPadding: const EdgeInsets.all(4),
-                        dividerColor: Colors.transparent,
-                        overlayColor: MaterialStateProperty.all(
-                          Colors.transparent,
-                        ),
-                        splashFactory: NoSplash.splashFactory,
-                        tabs: const [
-                          Tab(text: 'Insights'),
-                          Tab(text: 'Action'),
+                      child: Stack(
+                        children: [
+                          TabBar(
+                            labelColor: AppColors.primary,
+                            unselectedLabelColor: Colors.black54,
+                            labelStyle: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                            unselectedLabelStyle: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w400),
+                            indicator: BoxDecoration(
+                              color: Colors.white.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            indicatorPadding: const EdgeInsets.all(4),
+                            dividerColor: Colors.transparent,
+                            overlayColor: MaterialStateProperty.all(
+                              Colors.transparent,
+                            ),
+                            splashFactory: NoSplash.splashFactory,
+                            tabs: const [
+                              Tab(text: 'Insights'),
+                              Tab(text: 'Take Action'),
+                            ],
+                          ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            top: 8,
+                            bottom: 8,
+                            child: Center(
+                              child: Container(
+                                width: 1,
+                                color: Colors.black.withOpacity(0.1),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -1405,7 +1421,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         children: [
           _buildHeader(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 2),
             child: Center(
               child: Text(
                 _record?.title ?? 'Session Summary',
