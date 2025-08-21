@@ -926,21 +926,36 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               Expanded(
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 180),
-                    child: TabBar(
-                      labelColor: Colors.black,
-                      unselectedLabelColor: Colors.black54,
-                      labelStyle: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                      unselectedLabelStyle: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium,
-                      indicatorColor: Colors.transparent,
-                      dividerColor: Colors.transparent,
-                      tabs: const [
-                        Tab(text: 'Insights'),
-                        Tab(text: 'Action'),
-                      ],
+                    constraints: const BoxConstraints(maxWidth: 220),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(25),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.12),
+                          width: 1,
+                        ),
+                      ),
+                      child: TabBar(
+                        labelColor: AppColors.primary,
+                        unselectedLabelColor: Colors.black54,
+                        labelStyle: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                        unselectedLabelStyle: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w400),
+                        indicator: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        indicatorPadding: const EdgeInsets.all(4),
+                        dividerColor: Colors.transparent,
+                        tabs: const [
+                          Tab(text: 'Insights'),
+                          Tab(text: 'Action'),
+                        ],
+                      ),
                     ),
                   ),
                 ),
