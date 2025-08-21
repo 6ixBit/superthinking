@@ -48,6 +48,9 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   String? _recordingFilePath;
   String? _sessionId;
 
+  bool _isStopping = false;
+  static const Duration _kMaxRecordDuration = Duration(minutes: 10);
+
   String _formatDuration(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -191,6 +194,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
     print('[RecordSession] Starting recording...');
     setState(() {
       isRecording = true;
+      _isStopping = false;
       _recordElapsed = Duration.zero;
       transcript = '';
       _promptEvents.clear();
@@ -201,6 +205,10 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
       setState(() {
         _recordElapsed += const Duration(seconds: 1);
       });
+      // Auto-stop when we reach the cap
+      if (_recordElapsed >= _kMaxRecordDuration && !_isStopping) {
+        unawaited(_stopRecording());
+      }
     });
 
     // Start file recording
@@ -280,7 +288,8 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
   }
 
   Future<void> _stopRecording() async {
-    if (!isRecording) return;
+    if (!isRecording || _isStopping) return;
+    _isStopping = true;
     print('[RecordSession] Stopping recording...');
     _recordTimer?.cancel();
     _suggestionTimer?.cancel();
@@ -528,7 +537,7 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
                       const SizedBox(height: 8),
                       if (isRecording)
                         Text(
-                          _formatDuration(_recordElapsed),
+                          '${_formatDuration(_recordElapsed)} / 10:00',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: Colors.black54),
                         ),
