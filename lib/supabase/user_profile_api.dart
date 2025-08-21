@@ -1,4 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'supabase_client.dart';
 
@@ -83,12 +85,27 @@ class UserProfileApi {
   static Future<bool> deleteAccount() async {
     final user = _client.auth.currentUser;
     if (user == null) return false;
+
     try {
-      final resp = await _client.functions.invoke('delete-account');
-      if (resp.data is Map && (resp.data['status'] == 'ok')) {
-        return true;
-      }
-      return false;
+      final session = _client.auth.currentSession;
+      final accessToken = session?.accessToken;
+      if (accessToken == null) return false;
+
+      final uri = Uri.parse(
+        '${SupabaseConfig.supabaseUrl}/functions/v1/delete-account',
+      );
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'apikey': SupabaseConfig.supabaseAnonKey,
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode != 200) return false;
+      final Map<String, dynamic> data = json.decode(response.body);
+      return data['status'] == 'ok';
     } catch (_) {
       return false;
     }
