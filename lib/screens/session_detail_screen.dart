@@ -35,7 +35,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   SessionRecord? _record;
   bool _loading = true;
   final ConfettiController _confetti = ConfettiController(
-    duration: const Duration(milliseconds: 800),
+    duration: const Duration(milliseconds: 1200),
   );
   final Set<int> _completed = <int>{};
   bool _transcriptExpanded = false;
@@ -55,6 +55,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
+  // Observed TabController for auto-refresh on Action tab
+  TabController? _observedTabController;
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +69,40 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     _confetti.dispose();
     _refreshTimer?.cancel();
     _audioPlayer?.dispose();
+    _observedTabController?.removeListener(_onTabChanged);
     super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (_observedTabController == null) return;
+    if (!_observedTabController!.indexIsChanging &&
+        _observedTabController!.index == 1) {
+      print('[SessionDetail] Switching to Action tab');
+      // Auto-refresh when switching to Action tab
+      _refreshActionTab();
+    }
+  }
+
+  Future<void> _refreshActionTab() async {
+    print('[SessionDetail] _refreshActionTab called');
+    final rec = await SessionApi.fetchSessionById(widget.sessionId);
+    if (!mounted) return;
+    setState(() {
+      _record = rec;
+      _completed.clear();
+      if (rec != null) {
+        for (int i = 0; i < rec.actions.length; i++) {
+          if (rec.actions[i].status == 'completed') {
+            _completed.add(i);
+          }
+        }
+      }
+    });
+    print('[SessionDetail] Session refetched, loading insights...');
+    await _loadExplorationInsights();
+    print(
+      '[SessionDetail] Insights loaded, explorationInsights: ${_explorationInsights?.id}',
+    );
   }
 
   Future<void> _load() async {
@@ -1321,136 +1357,143 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
   // New: Action tab content
   Widget _buildActionsTab() {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 30, 20, 96),
-      children: [
-        // Commented out for now while implementing pattern detection
-        // if (_record?.analysis != null) ...[
-        //   _buildThinkingStyleBadge(),
-        //   const SizedBox(height: 24),
-        // ],
-        _buildPatternDetectionSection(),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Your next steps',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _refreshActionTab();
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 30, 20, 96),
+        children: [
+          // Commented out for now while implementing pattern detection
+          // if (_record?.analysis != null) ...[
+          //   _buildThinkingStyleBadge(),
+          //   const SizedBox(height: 24),
+          // ],
+          _buildPatternDetectionSection(),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Your next steps',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              tooltip: 'Add action',
-              onPressed: () => _showAddActionDialog(),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                tooltip: 'Add action',
+                onPressed: () => _showAddActionDialog(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_record != null && _record!.actions.isNotEmpty) ...[
+            ...List.generate(_record!.actions.length, (i) {
+              final action = _record!.actions[i];
+              final done = _completed.contains(i);
+              final isFromDeepExploration =
+                  action.source == 'deeper_exploration';
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Dismissible(
+                  key: Key('action_${action.id}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  onDismissed: (direction) async {
+                    await _deleteActionItem(i);
+                  },
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _toggleStep(i),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: isFromDeepExploration
+                            ? Border.all(
+                                color: AppColors.primary.withOpacity(0.3),
+                                width: 1,
+                              )
+                            : null,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              done ? Icons.check_circle : Icons.circle_outlined,
+                              color: done ? AppColors.primary : Colors.black26,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                action.description,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      decoration: done
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none,
+                                      color: done
+                                          ? Colors.black45
+                                          : isFromDeepExploration
+                                          ? AppColors.primary
+                                          : Colors.black87,
+                                      decorationThickness: 2,
+                                      fontWeight: isFromDeepExploration
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                              ),
+                            ),
+                            if (isFromDeepExploration) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.psychology,
+                                size: 16,
+                                color: AppColors.primary.withOpacity(0.7),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ] else ...[
+            Text(
+              'No actions generated yet.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-        if (_record != null && _record!.actions.isNotEmpty) ...[
-          ...List.generate(_record!.actions.length, (i) {
-            final action = _record!.actions[i];
-            final done = _completed.contains(i);
-            final isFromDeepExploration = action.source == 'deeper_exploration';
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Dismissible(
-                key: Key('action_${action.id}'),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.delete,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                onDismissed: (direction) async {
-                  await _deleteActionItem(i);
-                },
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => _toggleStep(i),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: isFromDeepExploration
-                          ? Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
-                              width: 1,
-                            )
-                          : null,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            done ? Icons.check_circle : Icons.circle_outlined,
-                            color: done ? AppColors.primary : Colors.black26,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              action.description,
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    decoration: done
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                    color: done
-                                        ? Colors.black45
-                                        : isFromDeepExploration
-                                        ? AppColors.primary
-                                        : Colors.black87,
-                                    decorationThickness: 2,
-                                    fontWeight: isFromDeepExploration
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                  ),
-                            ),
-                          ),
-                          if (isFromDeepExploration) ...[
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.psychology,
-                              size: 16,
-                              color: AppColors.primary.withOpacity(0.7),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-        ] else ...[
-          Text(
-            'No actions generated yet.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
-          ),
+          const SizedBox(height: 16),
+          _buildDeeperInsightsSection(),
         ],
-        const SizedBox(height: 16),
-        _buildDeeperInsightsSection(),
-      ],
+      ),
     );
   }
 
@@ -1631,14 +1674,16 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       ),
     );
 
-    // If exploration succeeded, switch to Action tab and reload insights
+    // If exploration succeeded, switch to Action tab and refresh data explicitly
+    print('[SessionDetail] Exploration result: $result');
     if (result == true && mounted) {
-      final tabController = DefaultTabController.of(context);
-      if (tabController != null) {
-        tabController.animateTo(1); // Action tab
+      print('[SessionDetail] Starting post-exploration refresh...');
+      if (_observedTabController != null) {
+        _observedTabController!.animateTo(1); // Action tab
+        print('[SessionDetail] Switched to Action tab');
       }
-      await _loadExplorationInsights();
-      setState(() {});
+      await _refreshActionTab();
+      print('[SessionDetail] Refresh completed');
     }
   }
 
@@ -1766,8 +1811,19 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             ),
           ),
           Expanded(
-            child: TabBarView(
-              children: [_buildInsightsTab(), _buildActionsTab()],
+            child: Builder(
+              builder: (innerContext) {
+                final controller = DefaultTabController.of(innerContext);
+                if (controller != null &&
+                    controller != _observedTabController) {
+                  _observedTabController?.removeListener(_onTabChanged);
+                  _observedTabController = controller;
+                  _observedTabController!.addListener(_onTabChanged);
+                }
+                return TabBarView(
+                  children: [_buildInsightsTab(), _buildActionsTab()],
+                );
+              },
             ),
           ),
         ],

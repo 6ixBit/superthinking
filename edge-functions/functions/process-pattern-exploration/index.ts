@@ -97,7 +97,7 @@ serve(async (req) => {
       "file",
       new File([audioBlob], "exploration.m4a", { type: "audio/m4a" })
     );
-    form.append("model", "whisper-1");
+    form.append("model", "gpt-4o-transcribe");
 
     const transcribeResp = await fetch(
       "https://api.openai.com/v1/audio/transcriptions",
@@ -139,6 +139,11 @@ Their response: "${explorationTranscript}"
 Based on their deeper exploration, provide insights and actionable steps.
 
 TONE: Write directly to them using "you". Be warm, empathetic, and encouraging.
+
+CRITICAL STYLE RULES:
+- Always write in second person (use "you", "your").
+- Never refer to them as "user", "they", "them", or "their".
+- The "key_realization" MUST start with "You" or "Your" and prefer past tense (e.g., "You acknowledged...").
 
 Return JSON with this exact structure:
 {
@@ -219,6 +224,31 @@ Return only valid JSON:`;
         status: 502,
         headers: corsHeaders,
       });
+    }
+
+    // Light post-processing to ensure second-person tone
+    const sanitizeSecondPerson = (text: any): string | null => {
+      if (!text || typeof text !== "string") return text ?? null;
+      let out = text;
+      out = out.replace(/\b[Tt]he user\b/g, "you");
+      out = out.replace(/\bthey\b/gi, "you");
+      out = out.replace(/\btheir\b/gi, "your");
+      out = out.replace(/\bthem\b/gi, "you");
+      // Ensure key realization starts with You/Your when applicable
+      return out.trim();
+    };
+
+    parsed.insight = sanitizeSecondPerson(parsed.insight);
+    parsed.key_realization = sanitizeSecondPerson(parsed.key_realization);
+    parsed.encouragement = sanitizeSecondPerson(parsed.encouragement);
+
+    if (
+      typeof parsed.key_realization === "string" &&
+      !/^\s*(You|Your)\b/.test(parsed.key_realization)
+    ) {
+      parsed.key_realization = `You ${parsed.key_realization
+        .charAt(0)
+        .toLowerCase()}${parsed.key_realization.slice(1)}`;
     }
 
     // Store the pattern exploration insights
