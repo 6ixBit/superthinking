@@ -77,14 +77,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     if (_observedTabController == null) return;
     if (!_observedTabController!.indexIsChanging &&
         _observedTabController!.index == 1) {
-      print('[SessionDetail] Switching to Action tab');
       // Auto-refresh when switching to Action tab
       _refreshActionTab();
     }
   }
 
   Future<void> _refreshActionTab() async {
-    print('[SessionDetail] _refreshActionTab called');
     final rec = await SessionApi.fetchSessionById(widget.sessionId);
     if (!mounted) return;
     setState(() {
@@ -98,11 +96,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         }
       }
     });
-    print('[SessionDetail] Session refetched, loading insights...');
     await _loadExplorationInsights();
-    print(
-      '[SessionDetail] Insights loaded, explorationInsights: ${_explorationInsights?.id}',
-    );
   }
 
   Future<void> _load() async {
@@ -1675,15 +1669,11 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     );
 
     // If exploration succeeded, switch to Action tab and refresh data explicitly
-    print('[SessionDetail] Exploration result: $result');
     if (result == true && mounted) {
-      print('[SessionDetail] Starting post-exploration refresh...');
       if (_observedTabController != null) {
         _observedTabController!.animateTo(1); // Action tab
-        print('[SessionDetail] Switched to Action tab');
       }
       await _refreshActionTab();
-      print('[SessionDetail] Refresh completed');
     }
   }
 

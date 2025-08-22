@@ -275,9 +275,6 @@ class _RecordSessionScreenState extends State<RecordSessionScreen> {
               // Always update with the latest recognized words
               // speech_to_text accumulates words automatically
               transcript = words;
-              print(
-                '[RecordSession] Transcript updated: "${words.substring(0, math.min(50, words.length))}..."',
-              );
             }
           });
         },
