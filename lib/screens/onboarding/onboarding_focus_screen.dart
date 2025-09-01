@@ -30,7 +30,7 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 6, total: 7),
+        child: _OnboardingHeader(current: 7, total: 8),
       ),
       body: Stack(
         children: [

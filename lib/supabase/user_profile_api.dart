@@ -110,4 +110,15 @@ class UserProfileApi {
       return false;
     }
   }
+
+  // I am adding a helper to set the user's display name in the new `name` column.
+  static Future<void> setName(String name) async {
+    final user = _client.auth.currentUser;
+    if (user == null) return;
+    await ensureProfile();
+    await _client
+        .from('user_profiles')
+        .update({'name': name, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('user_id', user.id);
+  }
 }

@@ -30,7 +30,7 @@ class _OnboardingAgeScreenState extends State<OnboardingAgeScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 3, total: 7),
+        child: _OnboardingHeader(current: 4, total: 8),
       ),
       body: Stack(
         children: [

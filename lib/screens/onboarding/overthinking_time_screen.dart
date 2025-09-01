@@ -78,7 +78,7 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 7, total: 7),
+        child: _OnboardingHeader(current: 8, total: 8),
       ),
       body: Stack(
         children: [

@@ -8,17 +8,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:superthinking/app.dart';
+import 'package:superthinking/screens/onboarding/welcome_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const AppRoot());
+  testWidgets('Welcome screen loads and CTA is visible', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: WelcomeScreen()));
 
-    // Verify welcome copy is visible.
-    expect(
-      find.text("What if your overthinking wasn't a problem…"),
-      findsOneWidget,
-    );
+    expect(find.text('Activate My SuperThinking'), findsOneWidget);
+    expect(find.text('1/8'), findsOneWidget);
   });
 }

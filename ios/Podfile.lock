@@ -1,5 +1,5 @@
 PODS:
-  - app_links (0.0.2):
+  - app_links (6.4.1):
     - Flutter
   - audioplayers_darwin (0.0.1):
     - Flutter
@@ -16,22 +16,22 @@ PODS:
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
-  - purchases_flutter (9.2.1):
+  - purchases_flutter (9.2.3):
     - Flutter
-    - PurchasesHybridCommon (= 16.2.2)
-  - purchases_ui_flutter (9.2.1):
+    - PurchasesHybridCommon (= 17.0.0)
+  - purchases_ui_flutter (9.2.3):
     - Flutter
-    - PurchasesHybridCommonUI (= 16.2.2)
-  - PurchasesHybridCommon (16.2.2):
-    - RevenueCat (= 5.34.0)
-  - PurchasesHybridCommonUI (16.2.2):
-    - PurchasesHybridCommon (= 16.2.2)
-    - RevenueCatUI (= 5.34.0)
-  - record_ios (1.0.0):
+    - PurchasesHybridCommonUI (= 17.0.0)
+  - PurchasesHybridCommon (17.0.0):
+    - RevenueCat (= 5.35.1)
+  - PurchasesHybridCommonUI (17.0.0):
+    - PurchasesHybridCommon (= 17.0.0)
+    - RevenueCatUI (= 5.35.1)
+  - record_ios (1.1.0):
     - Flutter
-  - RevenueCat (5.34.0)
-  - RevenueCatUI (5.34.0):
-    - RevenueCat (= 5.34.0)
+  - RevenueCat (5.35.1)
+  - RevenueCatUI (5.35.1):
+    - RevenueCat (= 5.35.1)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -105,22 +105,22 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/wakelock_plus/ios"
 
 SPEC CHECKSUMS:
-  app_links: f3e17e4ee5e357b39d8b95290a9b2c299fca71c6
+  app_links: 585674be3c6661708e6cd794ab4f39fb9d8356f9
   audioplayers_darwin: 877d9a4d06331c5c374595e46e16453ac7eafa40
   CwlCatchException: 7acc161b299a6de7f0a46a6ed741eae2c8b4d75a
   CwlCatchExceptionSupport: 54ccab8d8c78907b57f99717fb19d4cc3bce02dc
-  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
   package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
-  purchases_flutter: 0d71a9620d3ba19ffd97f27b66d74ba39ca5d28f
-  purchases_ui_flutter: 5f9880c4f1591b15253d66b2b9f2d068bdee6e12
-  PurchasesHybridCommon: 62f852419aae7041792217593998f7ac3f8b567d
-  PurchasesHybridCommonUI: 365fd90992bd91e6d330f5a91dcc8459a5a6ba14
-  record_ios: 1bbc430ab8406174d70332f23e06a3dc751239b4
-  RevenueCat: eb2aa042789d9c99ad5172bd96e28b96286d6ada
-  RevenueCatUI: 03025a80b64ce8ff8e43f47a7eb9dbbb6b4f486e
+  purchases_flutter: e24c2d2e9240af64e8deeb0b4ec47662746be6ff
+  purchases_ui_flutter: 54998290c3597cee8e2aac65225539860a2741c0
+  PurchasesHybridCommon: 34d2f73712f4c02f2963fcfb62d43757a9136860
+  PurchasesHybridCommonUI: 16e162423c0010f9a6f2c1d6505dcc075f49dcbe
+  record_ios: 840d21cce013c5a3b2168b74a54ebdb4136359e2
+  RevenueCat: 47d52620419dcf3dce4e724eade9d390e16ab4b0
+  RevenueCatUI: 3c72ef61b54c3f4787afab6a3b0f00cbec192063
   shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
   sign_in_with_apple: f3bf75217ea4c2c8b91823f225d70230119b8440
   speech_to_text: 87bf9298952e8d9073be1b6aade6d5758db5170c

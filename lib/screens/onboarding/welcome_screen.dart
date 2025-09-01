@@ -16,7 +16,7 @@ class WelcomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  const _OnboardingHeader(current: 1, total: 7),
+                  const _OnboardingHeader(current: 1, total: 8),
                   const Spacer(),
                   Text(
                     'What if your overthinking wasn\'t a problem…\nbut a superpower waiting to be unleashed?',
@@ -28,7 +28,7 @@ class WelcomeScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: () {
-                      Navigator.of(context).pushNamed('/onboarding-goals');
+                      Navigator.of(context).pushNamed('/onboarding-name');
                     },
                     child: const Text('Activate My SuperThinking'),
                   ),

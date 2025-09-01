@@ -27,6 +27,7 @@ import 'screens/dev/dev_catalog_screen.dart';
 import 'screens/session_detail_screen.dart';
 import 'services/notification_service.dart';
 import 'services/app_lifecycle.dart';
+import 'screens/onboarding/onboarding_name_screen.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -94,6 +95,7 @@ class _SuperThinkingAppState extends State<SuperThinkingApp> {
         '/gate': (_) => const _AuthGate(),
         '/': (_) => const WelcomeScreen(),
         '/login': (_) => const LoginScreen(),
+        '/onboarding-name': (_) => const OnboardingNameScreen(),
         '/onboarding-goals': (_) => const OnboardingGoalsScreen(),
         '/onboarding-age': (_) => const OnboardingAgeScreen(),
         '/onboarding-gender': (_) => const OnboardingGenderScreen(),
