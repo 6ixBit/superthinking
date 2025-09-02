@@ -61,7 +61,7 @@ class _AnalysisResultsScreenState extends State<AnalysisResultsScreen>
 
   void _onContinue() async {
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/onboarding-age');
+    Navigator.of(context).pushNamed('/value-welcome');
   }
 
   @override
@@ -74,7 +74,7 @@ class _AnalysisResultsScreenState extends State<AnalysisResultsScreen>
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 10, total: 13),
+        child: _OnboardingHeader(current: 13, total: 17),
       ),
       body: Stack(
         children: [

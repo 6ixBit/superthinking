@@ -38,7 +38,7 @@ class _OverthinkingImpactScreenState extends State<OverthinkingImpactScreen> {
       context.read<AppState>().addQuickAnswer('Overthinking impact: $impact');
       await UserProfileApi.setOnboardingResponse('overthinking_impact', impact);
       if (!mounted) return;
-      Navigator.of(context).pushNamed('/analysis-results');
+      Navigator.of(context).pushNamed('/analysis-loading');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -50,7 +50,7 @@ class _OverthinkingImpactScreenState extends State<OverthinkingImpactScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 9, total: 13),
+        child: _OnboardingHeader(current: 11, total: 17),
       ),
       body: Stack(
         children: [
@@ -198,7 +198,10 @@ class _OverthinkingImpactScreenState extends State<OverthinkingImpactScreen> {
                       color: Colors.white,
                     ),
                   )
-                : const Text('Continue'),
+                : const Text(
+                    'Analyse',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
           ),
         ),
       ),

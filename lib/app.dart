@@ -7,7 +7,6 @@ import 'theme/app_theme.dart';
 import 'screens/onboarding/welcome_screen.dart';
 import 'screens/quick_context_screen.dart';
 import 'screens/onboarding/onboarding_frequency_screen.dart';
-import 'screens/onboarding/onboarding_focus_screen.dart';
 import 'screens/onboarding/onboarding_age_screen.dart';
 import 'screens/onboarding/onboarding_gender_screen.dart';
 import 'screens/onboarding/onboarding_goals_screen.dart';
@@ -35,6 +34,10 @@ import 'screens/onboarding/overthinking_triggers_screen.dart';
 import 'screens/onboarding/overthinking_content_screen.dart';
 import 'screens/onboarding/overthinking_impact_screen.dart';
 import 'screens/onboarding/social_proof_screen.dart';
+import 'screens/onboarding/analysis_loading_screen.dart';
+import 'screens/onboarding/value_welcome_screen.dart';
+import 'screens/onboarding/value_record_screen.dart';
+import 'screens/onboarding/value_conquer_screen.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -110,10 +113,13 @@ class _SuperThinkingAppState extends State<SuperThinkingApp> {
         '/onboarding-frequency': (_) => const OnboardingFrequencyScreen(),
         '/overthinking-content': (_) => const OverthinkingContentScreen(),
         '/overthinking-impact': (_) => const OverthinkingImpactScreen(),
+        '/analysis-loading': (_) => const AnalysisLoadingScreen(),
+        '/value-welcome': (_) => const ValueWelcomeScreen(),
+        '/value-record': (_) => const ValueRecordScreen(),
+        '/value-conquer': (_) => const ValueConquerScreen(),
         '/onboarding-age': (_) => const OnboardingAgeScreen(),
         '/onboarding-gender': (_) => const OnboardingGenderScreen(),
         '/analysis-results': (_) => const AnalysisResultsScreen(),
-        '/onboarding-focus': (_) => const OnboardingFocusScreen(),
         '/quick': (_) => const QuickContextScreen(),
         '/record': (_) => const RecordSessionScreen(),
         '/loading': (_) => const LoadingRevealScreen(),

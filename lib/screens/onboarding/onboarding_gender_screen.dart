@@ -21,7 +21,7 @@ class _OnboardingGenderScreenState extends State<OnboardingGenderScreen> {
     context.read<AppState>().addQuickAnswer('Gender: ${_selected!}');
     await UserProfileApi.setOnboardingResponse('gender', _selected);
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/onboarding-focus');
+    Navigator.of(context).pushNamed('/onboarding-goals');
   }
 
   @override
@@ -30,7 +30,7 @@ class _OnboardingGenderScreenState extends State<OnboardingGenderScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 12, total: 13),
+        child: _OnboardingHeader(current: 4, total: 17),
       ),
       body: Stack(
         children: [

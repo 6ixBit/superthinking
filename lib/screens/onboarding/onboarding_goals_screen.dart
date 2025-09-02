@@ -34,7 +34,7 @@ class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 3, total: 13),
+        child: _OnboardingHeader(current: 5, total: 17),
       ),
       body: Stack(
         children: [

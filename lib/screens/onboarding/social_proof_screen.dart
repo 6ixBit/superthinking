@@ -45,7 +45,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 13, total: 13),
+        child: _OnboardingHeader(current: 17, total: 17),
       ),
       body: Stack(
         children: [

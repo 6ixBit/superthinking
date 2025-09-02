@@ -62,7 +62,7 @@ class _OverthinkingContentScreenState extends State<OverthinkingContentScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 8, total: 13),
+        child: _OnboardingHeader(current: 10, total: 17),
       ),
       body: Stack(
         children: [

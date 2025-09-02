@@ -31,7 +31,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
       await UserProfileApi.setName(input);
       await UserProfileApi.setOnboardingResponse('name', input);
       if (!mounted) return;
-      Navigator.of(context).pushNamed('/onboarding-goals');
+      Navigator.of(context).pushNamed('/onboarding-age');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -44,7 +44,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 2, total: 13),
+        child: _OnboardingHeader(current: 2, total: 17),
       ),
       body: Stack(
         children: [
