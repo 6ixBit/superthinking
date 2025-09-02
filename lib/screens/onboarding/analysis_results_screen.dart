@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
-import 'package:in_app_review/in_app_review.dart';
 
 class AnalysisResultsScreen extends StatefulWidget {
   const AnalysisResultsScreen({super.key});
@@ -61,28 +60,8 @@ class _AnalysisResultsScreenState extends State<AnalysisResultsScreen>
   }
 
   void _onContinue() async {
-    // Show native review prompt before going to next step
-    await _requestReview();
-
-    // Small delay to let review dialog fully dismiss if shown
-    await Future.delayed(const Duration(milliseconds: 500));
-
     if (!mounted) return;
     Navigator.of(context).pushNamed('/onboarding-age');
-  }
-
-  Future<void> _requestReview() async {
-    try {
-      final InAppReview inAppReview = InAppReview.instance;
-
-      // Check if review is available (iOS will only show if criteria are met)
-      if (await inAppReview.isAvailable()) {
-        // Request the native review dialog
-        await inAppReview.requestReview();
-      }
-    } catch (_) {
-      // If native review fails, silently continue
-    }
   }
 
   @override

@@ -17,52 +17,19 @@ class OnboardingFocusScreen extends StatefulWidget {
 
 class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
   String? _selected;
-  final List<String> _options = const ['Problems', 'Possibilities', 'Both'];
+  final List<String> _options = const [
+    'Improve focus 🎯',
+    'Reduce distractions 🧘‍♂️',
+    'Both ✨',
+  ];
 
-  void _onContinue() async {
+  Future<void> _onContinue() async {
     if (_selected == null) return;
     context.read<AppState>().addQuickAnswer(_selected!);
-    await UserProfileApi.setOnboardingResponse('overthinking_focus', _selected);
+    await UserProfileApi.setOnboardingResponse('focus_goal', _selected);
 
     if (!mounted) return;
-
-    // Present RevenueCat paywall (hard paywall)
-    try {
-      await RevenueCatUI.presentPaywall();
-    } catch (_) {}
-
-    if (!mounted) return;
-
-    // Check if user has access (entitlement active). Replace 'pro' if your entitlement id differs.
-    bool hasAccess = false;
-    try {
-      final info = await rc.Purchases.getCustomerInfo();
-      hasAccess = info.entitlements.active.isNotEmpty;
-    } catch (_) {}
-
-    if (hasAccess) {
-      // Navigate to home only if subscribed / has entitlement
-      Navigator.of(context).pushAndRemoveUntil(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const HomeShell(),
-          transitionDuration: const Duration(milliseconds: 160),
-          reverseTransitionDuration: const Duration(milliseconds: 160),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-        (route) => false,
-      );
-
-      // Run Supabase updates in background
-      Future.microtask(() async {
-        try {
-          await UserProfileApi.markOnboardingCompleted();
-        } catch (_) {}
-      });
-    } else {
-      // Stay on this screen (hard paywall)
-    }
+    Navigator.of(context).pushNamed('/social-proof');
   }
 
   @override
@@ -71,7 +38,7 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 13, total: 13),
+        child: _OnboardingHeader(current: 12, total: 13),
       ),
       body: Stack(
         children: [
@@ -98,22 +65,17 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'When you overthink, is it mostly…',
+                            'What would you like to focus on?',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
                           const SizedBox(height: 16),
                           ...(() {
-                            final emojiFor = <String, String>{
-                              'Problems': '🧩',
-                              'Possibilities': '✨',
-                              'Both': '⚖️',
-                            };
                             return _options
                                 .map(
                                   (o) => _OptionButton(
-                                    label: o,
-                                    emoji: emojiFor[o],
+                                    label: o.split(' ')[0],
+                                    emoji: o.split(' ')[1],
                                     selected: _selected == o,
                                     onTap: () => setState(() => _selected = o),
                                   ),

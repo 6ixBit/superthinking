@@ -80,12 +80,6 @@ class _OverthinkingImpactScreenState extends State<OverthinkingImpactScreen> {
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Move the slider to reflect how overthinking typically impacts your life.',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
                           const SizedBox(height: 60),
 
                           // Impact indicator

@@ -48,33 +48,42 @@ class YoureInRightPlaceScreen extends StatelessWidget {
                           const SizedBox(height: 40),
 
                           // Goal cards
-                          _GoalCard(
-                            icon: Icons.psychology_outlined,
-                            iconColor: const Color(0xFF4ECDC4),
-                            title: 'Transform Overthinking',
-                            subtitle:
-                                '87% of users saw improved mental clarity.',
+                          Transform.rotate(
+                            angle: -0.02, // Slight left tilt
+                            child: _GoalCard(
+                              icon: Icons.psychology_outlined,
+                              iconColor: const Color(0xFF4ECDC4),
+                              title: 'Transform Overthinking',
+                              subtitle:
+                                  '87% of users saw improved mental clarity.',
+                            ),
                           ),
 
                           const SizedBox(height: 12),
 
-                          _GoalCard(
-                            icon: Icons.explore_outlined,
-                            iconColor: const Color(0xFF4ECDC4),
-                            title: 'Discover Your SuperThinking',
-                            subtitle:
-                                '84% found new ways to channel thoughts positively.',
+                          Transform.rotate(
+                            angle: 0.015, // Slight right tilt
+                            child: _GoalCard(
+                              icon: Icons.explore_outlined,
+                              iconColor: const Color(0xFF4ECDC4),
+                              title: 'Discover Your SuperThinking',
+                              subtitle:
+                                  '84% found new ways to channel thoughts positively.',
+                            ),
                           ),
 
                           const SizedBox(height: 12),
 
-                          _GoalCard(
-                            icon: Icons.trending_up,
-                            iconColor: const Color(0xFF4ECDC4),
-                            title: 'Where You\'re Headed 🫵',
-                            subtitle:
-                                selectedGoal ??
-                                'Think differently and unlock your potential',
+                          Transform.rotate(
+                            angle: -0.01, // Slight left tilt
+                            child: _GoalCard(
+                              icon: Icons.trending_up,
+                              iconColor: const Color(0xFF4ECDC4),
+                              title: 'Where You\'re Headed 🫵',
+                              subtitle:
+                                  selectedGoal ??
+                                  'Think differently and unlock your potential',
+                            ),
                           ),
                         ],
                       ),
@@ -200,7 +209,7 @@ class _OnboardingHeader extends StatelessWidget {
               onPressed: () => Navigator.of(context).maybePop(),
               icon: const Icon(
                 Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
+                color: Colors.black,
               ),
             ),
             Expanded(
@@ -212,8 +221,8 @@ class _OnboardingHeader extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress.clamp(0, 1),
                       minHeight: 8,
-                      backgroundColor: Colors.white.withOpacity(0.3),
-                      color: Colors.white,
+                      backgroundColor: Colors.black.withOpacity(0.1),
+                      color: const Color(0xFF4ECDC4),
                     ),
                   ),
                 ),
@@ -224,7 +233,7 @@ class _OnboardingHeader extends StatelessWidget {
               '$current/$total',
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.white),
+              ).textTheme.bodyMedium?.copyWith(color: Colors.black),
             ),
           ],
         ),

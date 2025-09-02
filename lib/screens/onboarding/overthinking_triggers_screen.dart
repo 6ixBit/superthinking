@@ -18,11 +18,11 @@ class _OverthinkingTriggersScreenState
   bool _saving = false;
 
   final List<String> _triggers = [
-    'Life',
-    'Family',
-    'Friends',
-    'Relationships',
-    'Finances',
+    'Life 🌱',
+    'Family 👨‍👩‍👧‍👦',
+    'Friends 👥',
+    'Relationships ❤️',
+    'Finances 💰',
   ];
 
   void _toggleTrigger(String trigger) {
@@ -90,12 +90,6 @@ class _OverthinkingTriggersScreenState
                             'What are some triggers for your overthinking?',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Select all that apply. Understanding your triggers helps us personalize your experience.',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           const SizedBox(height: 40),
 

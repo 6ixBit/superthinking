@@ -34,6 +34,7 @@ import 'screens/onboarding/youre_in_right_place_screen.dart';
 import 'screens/onboarding/overthinking_triggers_screen.dart';
 import 'screens/onboarding/overthinking_content_screen.dart';
 import 'screens/onboarding/overthinking_impact_screen.dart';
+import 'screens/onboarding/social_proof_screen.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -112,10 +113,8 @@ class _SuperThinkingAppState extends State<SuperThinkingApp> {
         '/onboarding-age': (_) => const OnboardingAgeScreen(),
         '/onboarding-gender': (_) => const OnboardingGenderScreen(),
         '/analysis-results': (_) => const AnalysisResultsScreen(),
-        '/onboarding-frequency': (_) => const OnboardingFrequencyScreen(),
         '/onboarding-focus': (_) => const OnboardingFocusScreen(),
         '/quick': (_) => const QuickContextScreen(),
-        '/overthinking-time': (_) => const OverthinkingTimeScreen(),
         '/record': (_) => const RecordSessionScreen(),
         '/loading': (_) => const LoadingRevealScreen(),
         '/reveal': (_) => const RevealScreen(),
@@ -124,6 +123,7 @@ class _SuperThinkingAppState extends State<SuperThinkingApp> {
         '/nudge': (_) => const NextSessionNudgeScreen(),
         '/home': (_) => const HomeShell(),
         '/dev': (_) => const DevCatalogScreen(),
+        '/social-proof': (_) => const SocialProofScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/session') {
