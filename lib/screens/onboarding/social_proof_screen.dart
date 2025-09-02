@@ -117,53 +117,34 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // First avatar
+                              // Overlapping avatars using real images
                               CircleAvatar(
                                 radius: 20,
-                                backgroundColor: AppColors.primary.withOpacity(
-                                  0.1,
-                                ),
-                                child: Text(
-                                  'A',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                backgroundImage: const AssetImage(
+                                  'assets/avatars/social_proof/sarah.jpg',
                                 ),
                               ),
                               Transform.translate(
                                 offset: const Offset(-8, 0),
-                                child: CircleAvatar(
+                                child: const CircleAvatar(
                                   radius: 20,
-                                  backgroundColor: AppColors.primary
-                                      .withOpacity(0.1),
-                                  child: Text(
-                                    'B',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  backgroundImage: AssetImage(
+                                    'assets/avatars/social_proof/katie.jpg',
                                   ),
                                 ),
                               ),
                               Transform.translate(
                                 offset: const Offset(-16, 0),
-                                child: CircleAvatar(
+                                child: const CircleAvatar(
                                   radius: 20,
-                                  backgroundColor: AppColors.primary
-                                      .withOpacity(0.1),
-                                  child: Text(
-                                    'C',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  backgroundImage: AssetImage(
+                                    'assets/avatars/social_proof/alex.jpg',
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '+ 250,000 people',
+                                '10,000 people+',
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(color: Colors.grey.shade700),
                               ),
@@ -175,16 +156,19 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                           // Reviews
                           _ReviewCard(
                             name: 'Emily Chen',
-                            handle: '@emilyc92',
+                            handle: '@emilyc',
+                            avatarPath: 'assets/avatars/social_proof/chen.jpg',
                             review:
-                                'SuperThinking changed how I process my thoughts! The voice journaling feature helps me untangle my mind - I\'m more productive and less anxious. Love the daily insights too!',
+                                'SuperThinking changed how I process my thoughts! The voice journaling feature helps me untangle my mind, and I\'m more productive and less anxious. Love the daily insights too!',
                           ),
 
                           const SizedBox(height: 16),
 
                           _ReviewCard(
-                            name: 'Michael Torres',
-                            handle: '@miket',
+                            name: 'Vanessa Park',
+                            handle: '@vanessap',
+                            avatarPath:
+                                'assets/avatars/social_proof/vanilla.jpg',
                             review:
                                 'Finally found an app that understands overthinking! Been using it for 2 months and my mind feels so much clearer. The progress tracking keeps me motivated. Absolutely worth it!',
                           ),
@@ -227,11 +211,13 @@ class _ReviewCard extends StatelessWidget {
   final String name;
   final String handle;
   final String review;
+  final String avatarPath;
 
   const _ReviewCard({
     required this.name,
     required this.handle,
     required this.review,
+    required this.avatarPath,
   });
 
   @override
@@ -257,13 +243,7 @@ class _ReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.primary.withOpacity(0.1),
-                child: Text(
-                  name[0],
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                backgroundImage: AssetImage(avatarPath),
               ),
               const SizedBox(width: 12),
               Expanded(

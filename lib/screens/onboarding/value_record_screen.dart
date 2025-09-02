@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import '../../theme/app_colors.dart';
 
 class ValueRecordScreen extends StatelessWidget {
@@ -31,22 +32,17 @@ class ValueRecordScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const Spacer(),
-                  Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.mic_rounded,
-                      color: AppColors.primary,
-                      size: 40,
+                  SizedBox(
+                    height: 180,
+                    child: Lottie.asset(
+                      'assets/lottie/aura_loop.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Hit record when you\'re overthinking',
+                    'Press record when thoughts spiral',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
@@ -54,7 +50,7 @@ class ValueRecordScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Just talk. We\'ll analyse your thinking style in the moment and give you an honest, helpful perspective.',
+                    'Real-time, context-aware nudges appear as you speak,\nso you know what to explore next.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.black87,
