@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math' as math;
 import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
+import '../../supabase/user_profile_api.dart';
 
 class AnalysisResultsScreen extends StatefulWidget {
   const AnalysisResultsScreen({super.key});
@@ -16,16 +18,26 @@ class _AnalysisResultsScreenState extends State<AnalysisResultsScreen>
   late Animation<double> _barAnimation;
   late Animation<double> _fadeAnimation;
 
-  // Calculate user's overthinking score based on their onboarding responses
-  int _calculateOverthinkingScore() {
-    // This would normally use the user's actual responses
-    // For now, we'll show a convincing high score
-    return 78; // 78% overthinking score
+  late final int _userScore;
+  late final int _averageScore;
+  late final int _difference;
+  String? _name;
+
+  void _generateScores() {
+    final rand = math.Random();
+    _averageScore = 28 + rand.nextInt(11); // 28..38
+    // User score is at least 25 points higher than average, with variability
+    final minUser = _averageScore + 25;
+    final maxUser = math.min(95, _averageScore + 40); // cap high end
+    _userScore = minUser + rand.nextInt((maxUser - minUser) + 1);
+    _difference = _userScore - _averageScore;
   }
 
   @override
   void initState() {
     super.initState();
+    _generateScores();
+    _loadName();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
@@ -53,6 +65,14 @@ class _AnalysisResultsScreenState extends State<AnalysisResultsScreen>
     });
   }
 
+  Future<void> _loadName() async {
+    try {
+      final profile = await UserProfileApi.getProfile();
+      final n = (profile?['name'] as String?)?.trim();
+      if (mounted) setState(() => _name = n);
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -66,9 +86,9 @@ class _AnalysisResultsScreenState extends State<AnalysisResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final userScore = _calculateOverthinkingScore();
-    final averageScore = 32; // Average overthinking score
-    final difference = userScore - averageScore;
+    final userScore = _userScore;
+    final averageScore = _averageScore;
+    final difference = _difference;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -138,7 +158,9 @@ class _AnalysisResultsScreenState extends State<AnalysisResultsScreen>
                           FadeTransition(
                             opacity: _fadeAnimation,
                             child: Text(
-                              'We\'ve got some news to break to you...',
+                              (_name != null && _name!.isNotEmpty)
+                                  ? '${_name!}, we\'ve got some news to share…'
+                                  : 'We\'ve got some news to share…',
                               style: Theme.of(context).textTheme.bodyLarge
                                   ?.copyWith(color: Colors.black54),
                             ),
@@ -316,7 +338,7 @@ class _AnalysisResultsScreenState extends State<AnalysisResultsScreen>
                                         const SizedBox(width: 4),
                                         const Icon(
                                           Icons.trending_up,
-                                          color: Color(0xFFFF6B6B),
+                                          color: const Color(0xFFFF6B6B),
                                           size: 20,
                                         ),
                                       ],
@@ -425,10 +447,7 @@ class _OnboardingHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              '$current/$total',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            const SizedBox.shrink(),
           ],
         ),
       ),

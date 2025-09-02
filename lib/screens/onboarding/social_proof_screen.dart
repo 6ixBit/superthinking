@@ -144,7 +144,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '10,000 people+',
+                                '10,000+ people',
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(color: Colors.grey.shade700),
                               ),
@@ -181,7 +181,9 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: _onContinue,
+                      onPressed: () {
+                        Navigator.of(context).pushNamed('/free-trial-info');
+                      },
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -189,7 +191,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
                         ),
                       ),
                       child: const Text(
-                        'Continue',
+                        'Try for free',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -327,12 +329,7 @@ class _OnboardingHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              '$current/$total',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.black),
-            ),
+            const SizedBox.shrink(),
           ],
         ),
       ),

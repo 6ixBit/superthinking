@@ -160,12 +160,7 @@ class _OnboardingHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              '$current/$total',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.black),
-            ),
+            const SizedBox.shrink(),
           ],
         ),
       ),

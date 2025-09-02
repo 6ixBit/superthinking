@@ -38,6 +38,7 @@ import 'screens/onboarding/analysis_loading_screen.dart';
 import 'screens/onboarding/value_welcome_screen.dart';
 import 'screens/onboarding/value_record_screen.dart';
 import 'screens/onboarding/value_conquer_screen.dart';
+import 'screens/onboarding/free_trial_info_screen.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -130,6 +131,7 @@ class _SuperThinkingAppState extends State<SuperThinkingApp> {
         '/home': (_) => const HomeShell(),
         '/dev': (_) => const DevCatalogScreen(),
         '/social-proof': (_) => const SocialProofScreen(),
+        '/free-trial-info': (_) => const FreeTrialInfoScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/session') {

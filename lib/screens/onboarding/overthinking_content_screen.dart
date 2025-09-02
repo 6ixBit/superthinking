@@ -21,7 +21,7 @@ class _OverthinkingContentScreenState extends State<OverthinkingContentScreen> {
       'value': 'Problems',
       'title': 'Problems',
       'description': 'Dwelling on issues and challenges',
-      'emoji': '⚠️',
+      'emoji': '❗',
     },
     {
       'value': 'Solutions',
@@ -261,12 +261,7 @@ class _OnboardingHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              '$current/$total',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.black),
-            ),
+            const SizedBox.shrink(),
           ],
         ),
       ),
