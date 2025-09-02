@@ -1,7 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _headlineFadeAnimation;
+  late Animation<double> _analogyFadeAnimation;
+  late Animation<double> _buttonFadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    // Headline fades in first (0-30%)
+    _headlineFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
+      ),
+    );
+
+    // Analogy text fades in second (30-60%)
+    _analogyFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.3, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    // Button and badge fade in last (60-100%)
+    _buttonFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    // Start animation after a short delay
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        _animationController.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,21 +76,124 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   const _OnboardingHeader(current: 1, total: 13),
                   const Spacer(),
-                  Text(
-                    'What if your overthinking wasn\'t a problem…\nbut a superpower waiting to be unleashed?',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+
+                  // Main headline
+                  FadeTransition(
+                    opacity: _headlineFadeAnimation,
+                    child: Text(
+                      'Turn overthinking into clarity',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/onboarding-name');
-                    },
-                    child: const Text('Activate My SuperThinking'),
+                  const SizedBox(height: 16),
+
+                  // Analogy text
+                  FadeTransition(
+                    opacity: _analogyFadeAnimation,
+                    child: Text(
+                      'Just like crying releases sadness,\nspeaking your thoughts aloud can lighten overthinking',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.black87,
+                        height: 1.4,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+
+                  const SizedBox(height: 32),
+
+                  // Simple research badge and button
+                  FadeTransition(
+                    opacity: _buttonFadeAnimation,
+                    child: Column(
+                      children: [
+                        // Research badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4ECDC4).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.verified_outlined,
+                                color: Color(0xFF4ECDC4),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Based on CBT research',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: const Color(0xFF4ECDC4),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 48),
+
+                        // CTA Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: () {
+                              Navigator.of(
+                                context,
+                              ).pushNamed('/onboarding-name');
+                            },
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Get Started',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Learn more link
+                        GestureDetector(
+                          onTap: () async {
+                            final Uri url = Uri.parse(
+                              'https://my.clevelandclinic.org/health/treatments/21208-cognitive-behavioral-therapy-cbt',
+                            );
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(
+                                url,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                          },
+                          child: Text(
+                            'Learn more about CBT research',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Colors.black54,
+                                  decoration: TextDecoration.underline,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   const Spacer(flex: 2),
                 ],
@@ -78,7 +239,9 @@ class _OnboardingHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '$current/$total',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.black),
             ),
           ],
         ),

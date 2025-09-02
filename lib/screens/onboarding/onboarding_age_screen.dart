@@ -21,7 +21,7 @@ class _OnboardingAgeScreenState extends State<OnboardingAgeScreen> {
     context.read<AppState>().addQuickAnswer('Age range: ${_selected!}');
     await UserProfileApi.setOnboardingResponse('age_range', _selected);
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/analysis-results');
+    Navigator.of(context).pushNamed('/onboarding-gender');
   }
 
   @override
@@ -30,7 +30,7 @@ class _OnboardingAgeScreenState extends State<OnboardingAgeScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 10, total: 13),
+        child: _OnboardingHeader(current: 11, total: 13),
       ),
       body: Stack(
         children: [

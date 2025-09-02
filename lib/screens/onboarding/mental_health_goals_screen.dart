@@ -30,7 +30,9 @@ class _MentalHealthGoalsScreenState extends State<MentalHealthGoalsScreen> {
     );
     await UserProfileApi.setOnboardingResponse('mental_health_goal', _selected);
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/youre-in-right-place');
+    Navigator.of(
+      context,
+    ).pushNamed('/youre-in-right-place', arguments: _selected);
   }
 
   @override

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:in_app_review/in_app_review.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
+import 'package:purchases_flutter/purchases_flutter.dart' as rc;
 
 import '../../state/app_state.dart';
 import '../../theme/app_colors.dart';
 import '../../supabase/user_profile_api.dart';
+import '../home_shell.dart';
 
 class OnboardingFocusScreen extends StatefulWidget {
   const OnboardingFocusScreen({super.key});
@@ -24,27 +26,42 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
 
     if (!mounted) return;
 
-    // Show native review prompt before going to final onboarding step
-    await _requestReview();
-
-    // Small delay to let review dialog fully dismiss if shown
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Present RevenueCat paywall (hard paywall)
+    try {
+      await RevenueCatUI.presentPaywall();
+    } catch (_) {}
 
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/overthinking-time');
-  }
 
-  Future<void> _requestReview() async {
+    // Check if user has access (entitlement active). Replace 'pro' if your entitlement id differs.
+    bool hasAccess = false;
     try {
-      final InAppReview inAppReview = InAppReview.instance;
+      final info = await rc.Purchases.getCustomerInfo();
+      hasAccess = info.entitlements.active.isNotEmpty;
+    } catch (_) {}
 
-      // Check if review is available (iOS will only show if criteria are met)
-      if (await inAppReview.isAvailable()) {
-        // Request the native review dialog
-        await inAppReview.requestReview();
-      }
-    } catch (_) {
-      // If native review fails, silently continue
+    if (hasAccess) {
+      // Navigate to home only if subscribed / has entitlement
+      Navigator.of(context).pushAndRemoveUntil(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const HomeShell(),
+          transitionDuration: const Duration(milliseconds: 160),
+          reverseTransitionDuration: const Duration(milliseconds: 160),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+        (route) => false,
+      );
+
+      // Run Supabase updates in background
+      Future.microtask(() async {
+        try {
+          await UserProfileApi.markOnboardingCompleted();
+        } catch (_) {}
+      });
+    } else {
+      // Stay on this screen (hard paywall)
     }
   }
 

@@ -38,7 +38,7 @@ class _OverthinkingImpactScreenState extends State<OverthinkingImpactScreen> {
       context.read<AppState>().addQuickAnswer('Overthinking impact: $impact');
       await UserProfileApi.setOnboardingResponse('overthinking_impact', impact);
       if (!mounted) return;
-      Navigator.of(context).pushNamed('/onboarding-age');
+      Navigator.of(context).pushNamed('/analysis-results');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -60,7 +60,7 @@ class _OverthinkingImpactScreenState extends State<OverthinkingImpactScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFFFFE7D1), Colors.transparent],
+                  colors: [Color(0xFFFFE7D1), Color(0x00FFE7D1)],
                 ),
               ),
             ),
@@ -179,28 +179,6 @@ class _OverthinkingImpactScreenState extends State<OverthinkingImpactScreen> {
                               ],
                             ),
                           ),
-
-                          const SizedBox(height: 40),
-
-                          // Description based on selection
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: _sliderColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: _sliderColor.withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _getImpactDescription(),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.black87),
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -239,20 +217,6 @@ class _OverthinkingImpactScreenState extends State<OverthinkingImpactScreen> {
     if (_sliderValue < 0.6) return Icons.sentiment_neutral;
     if (_sliderValue < 0.8) return Icons.sentiment_satisfied;
     return Icons.sentiment_very_satisfied;
-  }
-
-  String _getImpactDescription() {
-    if (_sliderValue < 0.2) {
-      return 'Overthinking significantly disrupts your daily life and wellbeing.';
-    } else if (_sliderValue < 0.4) {
-      return 'Overthinking generally causes you stress and anxiety.';
-    } else if (_sliderValue < 0.6) {
-      return 'Overthinking has both positive and negative effects for you.';
-    } else if (_sliderValue < 0.8) {
-      return 'Overthinking often helps you solve problems and prepare for situations.';
-    } else {
-      return 'Overthinking is a valuable tool that significantly benefits your life.';
-    }
   }
 }
 

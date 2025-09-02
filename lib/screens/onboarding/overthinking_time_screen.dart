@@ -27,50 +27,11 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
     final chosen = _selected;
     if (chosen != null) {
       context.read<AppState>().addQuickAnswer('Overthink time: $chosen');
+      await UserProfileApi.setOnboardingResponse('overthinking_time', chosen);
     }
 
     if (!mounted) return;
-
-    // Present RevenueCat paywall (hard paywall)
-    try {
-      await RevenueCatUI.presentPaywall(displayCloseButton: true);
-    } catch (_) {}
-
-    if (!mounted) return;
-
-    // Check if user has access (entitlement active). Replace 'pro' if your entitlement id differs.
-    bool hasAccess = false;
-    try {
-      final info = await rc.Purchases.getCustomerInfo();
-      hasAccess = info.entitlements.active.isNotEmpty;
-    } catch (_) {}
-
-    if (hasAccess) {
-      // Navigate to home only if subscribed / has entitlement
-      Navigator.of(context).pushAndRemoveUntil(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const HomeShell(),
-          transitionDuration: const Duration(milliseconds: 160),
-          reverseTransitionDuration: const Duration(milliseconds: 160),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-        (route) => false,
-      );
-
-      // Run Supabase updates in background
-      Future.microtask(() async {
-        try {
-          if (chosen != null) {
-            await UserProfileApi.setPreferredPromptTime(chosen);
-          }
-          await UserProfileApi.markOnboardingCompleted();
-        } catch (_) {}
-      });
-    } else {
-      // Stay on this screen (hard paywall)
-    }
+    Navigator.of(context).pushNamed('/onboarding-age');
   }
 
   @override
@@ -79,7 +40,7 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 8, total: 8),
+        child: _OnboardingHeader(current: 10, total: 13),
       ),
       body: Stack(
         children: [
