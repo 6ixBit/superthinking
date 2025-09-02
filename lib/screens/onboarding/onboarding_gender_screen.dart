@@ -14,7 +14,22 @@ class OnboardingGenderScreen extends StatefulWidget {
 
 class _OnboardingGenderScreenState extends State<OnboardingGenderScreen> {
   String? _selected;
-  final List<String> _options = const ['Woman', 'Man', 'Non-binary'];
+  final List<String> _options = const ['Male', 'Female', 'Other'];
+  String? _name;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadName();
+  }
+
+  Future<void> _loadName() async {
+    try {
+      final profile = await UserProfileApi.getProfile();
+      final name = (profile?['name'] as String?)?.trim();
+      if (mounted) setState(() => _name = (name ?? ''));
+    } catch (_) {}
+  }
 
   Future<void> _onContinue() async {
     if (_selected == null) return;
@@ -57,16 +72,18 @@ class _OnboardingGenderScreenState extends State<OnboardingGenderScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Which best describes you?',
+                            (_name != null && _name!.isNotEmpty)
+                                ? '${_name!}, what best describes you?'
+                                : 'What best describes you?',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
                           const SizedBox(height: 16),
                           ...(() {
                             final emojiForGender = <String, String>{
-                              'Woman': '🌸',
-                              'Man': '🧢',
-                              'Non-binary': '🌈',
+                              'Male': '👨',
+                              'Female': '👩',
+                              'Other': '🌈',
                             };
                             return _options
                                 .map(

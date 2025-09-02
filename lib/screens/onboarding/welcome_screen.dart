@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lottie/lottie.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -74,8 +75,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  const _OnboardingHeader(current: 1, total: 13),
+                  const _OnboardingHeader(current: 1, total: 17),
                   const Spacer(),
+                  SizedBox(
+                    height: 180,
+                    child: Lottie.asset(
+                      'assets/lottie/happy_customer.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
                   // Main headline
                   FadeTransition(

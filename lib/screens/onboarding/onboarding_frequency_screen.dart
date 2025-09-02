@@ -15,7 +15,7 @@ class OnboardingFrequencyScreen extends StatefulWidget {
 
 class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
   String? _selected;
-  final List<String> _options = const ['Rarely', 'Sometimes', 'Often'];
+  final List<String> _options = const ['Hourly', 'Daily', 'Weekly'];
 
   void _onContinue() async {
     if (_selected == null) return;
@@ -68,9 +68,9 @@ class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
                           const SizedBox(height: 16),
                           ...(() {
                             final emojiFor = <String, String>{
-                              'Rarely': '🌱',
-                              'Sometimes': '🙂',
-                              'Often': '🔥',
+                              'Hourly': '⏱️',
+                              'Daily': '🗓️',
+                              'Weekly': '🕒',
                             };
                             return _options
                                 .map(

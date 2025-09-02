@@ -15,6 +15,23 @@ class OnboardingAgeScreen extends StatefulWidget {
 class _OnboardingAgeScreenState extends State<OnboardingAgeScreen> {
   String? _selected;
   final List<String> _options = const ['18-21', '22-28', '29-40', '41+'];
+  String? _name;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadName();
+  }
+
+  Future<void> _loadName() async {
+    try {
+      final profile = await UserProfileApi.getProfile();
+      final name = (profile?['name'] as String?)?.trim();
+      if (mounted) setState(() => _name = (name ?? ''));
+    } catch (_) {
+      // ignore
+    }
+  }
 
   Future<void> _onContinue() async {
     if (_selected == null) return;
@@ -57,7 +74,9 @@ class _OnboardingAgeScreenState extends State<OnboardingAgeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Which age range do you fall under?',
+                            (_name != null && _name!.isNotEmpty)
+                                ? '${_name!}, what age range do you fall under?'
+                                : 'What age range do you fall under?',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
