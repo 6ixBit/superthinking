@@ -1,31 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../state/app_state.dart';
-import '../../theme/app_colors.dart';
 import '../../supabase/user_profile_api.dart';
+import '../../theme/app_colors.dart';
 
-class OnboardingGoalsScreen extends StatefulWidget {
-  const OnboardingGoalsScreen({super.key});
+class OverthinkingContentScreen extends StatefulWidget {
+  const OverthinkingContentScreen({super.key});
 
   @override
-  State<OnboardingGoalsScreen> createState() => _OnboardingGoalsScreenState();
+  State<OverthinkingContentScreen> createState() =>
+      _OverthinkingContentScreenState();
 }
 
-class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
+class _OverthinkingContentScreenState extends State<OverthinkingContentScreen> {
   String? _selected;
-  final List<String> _options = const [
-    'Turn problems into solutions',
-    'Achieve mental clarity',
-    'Understanding your thought process better',
+  bool _saving = false;
+
+  final List<Map<String, dynamic>> _options = [
+    {
+      'value': 'Problems',
+      'title': 'Problems',
+      'description': 'Dwelling on issues and challenges',
+      'emoji': '⚠️',
+    },
+    {
+      'value': 'Solutions',
+      'title': 'Solutions',
+      'description': 'Analyzing ways to fix things',
+      'emoji': '💡',
+    },
+    {
+      'value': 'Imaginative Scenarios',
+      'title': 'Imaginative Scenarios',
+      'description': 'Creating hypothetical situations',
+      'emoji': '🧠',
+    },
   ];
 
   Future<void> _onContinue() async {
     if (_selected == null) return;
-    context.read<AppState>().addQuickAnswer('Goal: ${_selected!}');
-    await UserProfileApi.setOnboardingResponse('achievement_goal', _selected);
-    if (!mounted) return;
-    Navigator.of(context).pushNamed('/mental-health-goals');
+
+    setState(() => _saving = true);
+    try {
+      context.read<AppState>().addQuickAnswer(
+        'Overthinking content: $_selected',
+      );
+      await UserProfileApi.setOnboardingResponse(
+        'overthinking_content',
+        _selected,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushNamed('/overthinking-impact');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -34,7 +62,7 @@ class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 3, total: 13),
+        child: _OnboardingHeader(current: 8, total: 13),
       ),
       body: Stack(
         children: [
@@ -51,38 +79,38 @@ class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
                   Expanded(
-                    child: Center(
+                    child: SingleChildScrollView(
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const SizedBox(height: 40),
                           Text(
-                            'Tell us what you want to achieve with SuperThinking?',
+                            'When you overthink, is it mostly about:',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
-                          const SizedBox(height: 16),
-                          ...(() {
-                            final emojiFor = <String, String>{
-                              'Turn problems into solutions': '🔧',
-                              'Achieve mental clarity': '🧘‍♂️',
-                              'Understanding your thought process better': '🧠',
-                            };
-                            return _options
-                                .map(
-                                  (o) => _OptionButton(
-                                    label: o,
-                                    emoji: emojiFor[o],
-                                    selected: _selected == o,
-                                    onTap: () => setState(() => _selected = o),
-                                  ),
-                                )
-                                .toList();
-                          })(),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Understanding your thinking patterns helps us provide better guidance.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 40),
+
+                          // Options
+                          ..._options.map(
+                            (option) => _OptionButton(
+                              label: option['title'],
+                              description: option['description'],
+                              emoji: option['emoji'],
+                              selected: _selected == option['value'],
+                              onTap: () =>
+                                  setState(() => _selected = option['value']),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -98,8 +126,17 @@ class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           child: FilledButton(
-            onPressed: _selected == null ? null : _onContinue,
-            child: const Text('Continue'),
+            onPressed: _selected != null && !_saving ? _onContinue : null,
+            child: _saving
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Continue'),
           ),
         ),
       ),
@@ -109,11 +146,14 @@ class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
 
 class _OptionButton extends StatelessWidget {
   final String label;
+  final String description;
   final String? emoji;
   final bool selected;
   final VoidCallback onTap;
+
   const _OptionButton({
     required this.label,
+    required this.description,
     this.emoji,
     required this.selected,
     required this.onTap,
@@ -147,10 +187,27 @@ class _OptionButton extends StatelessWidget {
                 Text(emoji!, style: const TextStyle(fontSize: 16)),
               if (emoji != null) const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -182,7 +239,10 @@ class _OnboardingHeader extends StatelessWidget {
           children: [
             IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.black,
+              ),
             ),
             Expanded(
               child: Center(
@@ -193,7 +253,7 @@ class _OnboardingHeader extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress.clamp(0, 1),
                       minHeight: 8,
-                      backgroundColor: Colors.black12,
+                      backgroundColor: Colors.black.withOpacity(0.1),
                       color: AppColors.primary,
                     ),
                   ),
@@ -203,7 +263,9 @@ class _OnboardingHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '$current/$total',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.black),
             ),
           ],
         ),

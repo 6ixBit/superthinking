@@ -44,7 +44,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 2, total: 8),
+        child: _OnboardingHeader(current: 2, total: 13),
       ),
       body: Stack(
         children: [
@@ -71,7 +71,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'What\'s your name?',
+                            'What should we call you?',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),

@@ -1,50 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:in_app_review/in_app_review.dart';
-
 import '../../state/app_state.dart';
-import '../../theme/app_colors.dart';
 import '../../supabase/user_profile_api.dart';
+import '../../theme/app_colors.dart';
 
-class OnboardingFocusScreen extends StatefulWidget {
-  const OnboardingFocusScreen({super.key});
+class OverthinkingTriggersScreen extends StatefulWidget {
+  const OverthinkingTriggersScreen({super.key});
 
   @override
-  State<OnboardingFocusScreen> createState() => _OnboardingFocusScreenState();
+  State<OverthinkingTriggersScreen> createState() =>
+      _OverthinkingTriggersScreenState();
 }
 
-class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
-  String? _selected;
-  final List<String> _options = const ['Problems', 'Possibilities', 'Both'];
+class _OverthinkingTriggersScreenState
+    extends State<OverthinkingTriggersScreen> {
+  final Set<String> _selectedTriggers = {};
+  bool _saving = false;
 
-  void _onContinue() async {
-    if (_selected == null) return;
-    context.read<AppState>().addQuickAnswer(_selected!);
-    await UserProfileApi.setOnboardingResponse('overthinking_focus', _selected);
+  final List<String> _triggers = [
+    'Life',
+    'Family',
+    'Friends',
+    'Relationships',
+    'Finances',
+  ];
 
-    if (!mounted) return;
-
-    // Show native review prompt before going to final onboarding step
-    await _requestReview();
-
-    // Small delay to let review dialog fully dismiss if shown
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (!mounted) return;
-    Navigator.of(context).pushNamed('/overthinking-time');
+  void _toggleTrigger(String trigger) {
+    setState(() {
+      if (_selectedTriggers.contains(trigger)) {
+        _selectedTriggers.remove(trigger);
+      } else {
+        _selectedTriggers.add(trigger);
+      }
+    });
   }
 
-  Future<void> _requestReview() async {
-    try {
-      final InAppReview inAppReview = InAppReview.instance;
+  Future<void> _onContinue() async {
+    if (_selectedTriggers.isEmpty) return;
 
-      // Check if review is available (iOS will only show if criteria are met)
-      if (await inAppReview.isAvailable()) {
-        // Request the native review dialog
-        await inAppReview.requestReview();
-      }
-    } catch (_) {
-      // If native review fails, silently continue
+    setState(() => _saving = true);
+    try {
+      final triggersString = _selectedTriggers.join(', ');
+      context.read<AppState>().addQuickAnswer(
+        'Overthinking triggers: $triggersString',
+      );
+      await UserProfileApi.setOnboardingResponse(
+        'overthinking_triggers',
+        triggersString,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushNamed('/onboarding-frequency');
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -54,7 +61,7 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 13, total: 13),
+        child: _OnboardingHeader(current: 6, total: 13),
       ),
       body: Stack(
         children: [
@@ -71,38 +78,35 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
                   Expanded(
-                    child: Center(
+                    child: SingleChildScrollView(
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const SizedBox(height: 40),
                           Text(
-                            'When you overthink, is it mostly…',
+                            'What are some triggers for your overthinking?',
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
-                          const SizedBox(height: 16),
-                          ...(() {
-                            final emojiFor = <String, String>{
-                              'Problems': '🧩',
-                              'Possibilities': '✨',
-                              'Both': '⚖️',
-                            };
-                            return _options
-                                .map(
-                                  (o) => _OptionButton(
-                                    label: o,
-                                    emoji: emojiFor[o],
-                                    selected: _selected == o,
-                                    onTap: () => setState(() => _selected = o),
-                                  ),
-                                )
-                                .toList();
-                          })(),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Select all that apply. Understanding your triggers helps us personalize your experience.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 40),
+
+                          // Trigger options
+                          ..._triggers.map(
+                            (trigger) => _TriggerOption(
+                              trigger: trigger,
+                              isSelected: _selectedTriggers.contains(trigger),
+                              onTap: () => _toggleTrigger(trigger),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -118,8 +122,19 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           child: FilledButton(
-            onPressed: _selected == null ? null : _onContinue,
-            child: const Text('Continue'),
+            onPressed: _selectedTriggers.isNotEmpty && !_saving
+                ? _onContinue
+                : null,
+            child: _saving
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Continue'),
           ),
         ),
       ),
@@ -127,15 +142,14 @@ class _OnboardingFocusScreenState extends State<OnboardingFocusScreen> {
   }
 }
 
-class _OptionButton extends StatelessWidget {
-  final String label;
-  final String? emoji;
-  final bool selected;
+class _TriggerOption extends StatelessWidget {
+  final String trigger;
+  final bool isSelected;
   final VoidCallback onTap;
-  const _OptionButton({
-    required this.label,
-    this.emoji,
-    required this.selected,
+
+  const _TriggerOption({
+    required this.trigger,
+    required this.isSelected,
     required this.onTap,
   });
 
@@ -150,10 +164,10 @@ class _OptionButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             side: BorderSide(
-              color: selected ? AppColors.primary : Colors.black26,
+              color: isSelected ? AppColors.primary : Colors.black26,
             ),
             foregroundColor: Colors.black,
-            backgroundColor: selected
+            backgroundColor: isSelected
                 ? AppColors.primary.withOpacity(0.08)
                 : null,
             shape: RoundedRectangleBorder(
@@ -162,17 +176,16 @@ class _OptionButton extends StatelessWidget {
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  if (emoji != null)
-                    Text(emoji!, style: const TextStyle(fontSize: 16)),
-                  if (emoji != null) const SizedBox(width: 8),
-                  Text(label),
-                ],
+              Expanded(
+                child: Text(
+                  trigger,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              if (selected)
+              const SizedBox(width: 8),
+              if (isSelected)
                 const Icon(Icons.check_circle, color: AppColors.primary)
               else
                 const Icon(Icons.circle_outlined, color: Colors.black26),
@@ -200,7 +213,10 @@ class _OnboardingHeader extends StatelessWidget {
           children: [
             IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.black,
+              ),
             ),
             Expanded(
               child: Center(
@@ -211,7 +227,7 @@ class _OnboardingHeader extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress.clamp(0, 1),
                       minHeight: 8,
-                      backgroundColor: Colors.black12,
+                      backgroundColor: Colors.black.withOpacity(0.1),
                       color: AppColors.primary,
                     ),
                   ),
@@ -221,7 +237,9 @@ class _OnboardingHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '$current/$total',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.black),
             ),
           ],
         ),

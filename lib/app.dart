@@ -28,6 +28,12 @@ import 'screens/session_detail_screen.dart';
 import 'services/notification_service.dart';
 import 'services/app_lifecycle.dart';
 import 'screens/onboarding/onboarding_name_screen.dart';
+import 'screens/onboarding/analysis_results_screen.dart';
+import 'screens/onboarding/mental_health_goals_screen.dart';
+import 'screens/onboarding/youre_in_right_place_screen.dart';
+import 'screens/onboarding/overthinking_triggers_screen.dart';
+import 'screens/onboarding/overthinking_content_screen.dart';
+import 'screens/onboarding/overthinking_impact_screen.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -97,8 +103,15 @@ class _SuperThinkingAppState extends State<SuperThinkingApp> {
         '/login': (_) => const LoginScreen(),
         '/onboarding-name': (_) => const OnboardingNameScreen(),
         '/onboarding-goals': (_) => const OnboardingGoalsScreen(),
+        '/mental-health-goals': (_) => const MentalHealthGoalsScreen(),
+        '/youre-in-right-place': (_) => const YoureInRightPlaceScreen(),
+        '/overthinking-triggers': (_) => const OverthinkingTriggersScreen(),
+        '/onboarding-frequency': (_) => const OnboardingFrequencyScreen(),
+        '/overthinking-content': (_) => const OverthinkingContentScreen(),
+        '/overthinking-impact': (_) => const OverthinkingImpactScreen(),
         '/onboarding-age': (_) => const OnboardingAgeScreen(),
         '/onboarding-gender': (_) => const OnboardingGenderScreen(),
+        '/analysis-results': (_) => const AnalysisResultsScreen(),
         '/onboarding-frequency': (_) => const OnboardingFrequencyScreen(),
         '/onboarding-focus': (_) => const OnboardingFocusScreen(),
         '/quick': (_) => const QuickContextScreen(),

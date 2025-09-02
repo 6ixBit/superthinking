@@ -30,6 +30,7 @@ class _OverthinkingTimeScreenState extends State<OverthinkingTimeScreen> {
     }
 
     if (!mounted) return;
+
     // Present RevenueCat paywall (hard paywall)
     try {
       await RevenueCatUI.presentPaywall(displayCloseButton: true);

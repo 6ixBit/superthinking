@@ -16,7 +16,7 @@ class WelcomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  const _OnboardingHeader(current: 1, total: 8),
+                  const _OnboardingHeader(current: 1, total: 13),
                   const Spacer(),
                   Text(
                     'What if your overthinking wasn\'t a problem…\nbut a superpower waiting to be unleashed?',

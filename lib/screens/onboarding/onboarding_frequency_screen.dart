@@ -25,7 +25,7 @@ class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
       _selected,
     );
     if (!mounted) return;
-    Navigator.of(context).pushNamed('/onboarding-focus');
+    Navigator.of(context).pushNamed('/overthinking-content');
   }
 
   @override
@@ -34,7 +34,7 @@ class _OnboardingFrequencyScreenState extends State<OnboardingFrequencyScreen> {
       extendBodyBehindAppBar: true,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(56),
-        child: _OnboardingHeader(current: 6, total: 8),
+        child: _OnboardingHeader(current: 7, total: 13),
       ),
       body: Stack(
         children: [
