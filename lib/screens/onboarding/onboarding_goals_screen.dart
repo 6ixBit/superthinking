@@ -20,12 +20,17 @@ class _OnboardingGoalsScreenState extends State<OnboardingGoalsScreen> {
     'Understanding your thought process better',
   ];
 
-  Future<void> _onContinue() async {
+  void _onContinue() async {
     if (_selected == null) return;
-    context.read<AppState>().addQuickAnswer('Goal: ${_selected!}');
-    await UserProfileApi.setOnboardingResponse('achievement_goal', _selected);
+    final chosen = _selected!;
+    context.read<AppState>().addQuickAnswer(chosen);
     if (!mounted) return;
     Navigator.of(context).pushNamed('/mental-health-goals');
+    Future.microtask(() async {
+      try {
+        await UserProfileApi.setOnboardingResponse('goals', chosen);
+      } catch (_) {}
+    });
   }
 
   @override
@@ -121,44 +126,55 @@ class _OptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton(
-          onPressed: onTap,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            side: BorderSide(
-              color: selected ? AppColors.primary : Colors.black26,
-            ),
-            foregroundColor: Colors.black,
-            backgroundColor: selected
-                ? AppColors.primary.withOpacity(0.08)
-                : null,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          child: Row(
-            children: [
-              if (emoji != null)
-                Text(emoji!, style: const TextStyle(fontSize: 16)),
-              if (emoji != null) const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+    return Listener(
+      onPointerDown: (_) => onTap(),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: onTap,
+            style:
+                OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  side: BorderSide(
+                    color: selected ? AppColors.primary : Colors.black26,
+                  ),
+                  foregroundColor: Colors.black,
+                  backgroundColor: selected
+                      ? AppColors.primary.withOpacity(0.08)
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                ).copyWith(
+                  animationDuration: const Duration(milliseconds: 0),
+                  splashFactory: NoSplash.splashFactory,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-              ),
-              const SizedBox(width: 8),
-              if (selected)
-                const Icon(Icons.check_circle, color: AppColors.primary)
-              else
-                const Icon(Icons.circle_outlined, color: Colors.black26),
-            ],
+            child: Row(
+              children: [
+                if (emoji != null)
+                  Text(emoji!, style: const TextStyle(fontSize: 16)),
+                if (emoji != null) const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (selected)
+                  const Icon(Icons.check_circle, color: AppColors.primary)
+                else
+                  const Icon(Icons.circle_outlined, color: Colors.black26),
+              ],
+            ),
           ),
         ),
       ),

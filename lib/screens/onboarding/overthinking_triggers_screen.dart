@@ -149,41 +149,52 @@ class _TriggerOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton(
-          onPressed: onTap,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            side: BorderSide(
-              color: isSelected ? AppColors.primary : Colors.black26,
-            ),
-            foregroundColor: Colors.black,
-            backgroundColor: isSelected
-                ? AppColors.primary.withOpacity(0.08)
-                : null,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  trigger,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+    return Listener(
+      onPointerDown: (_) => onTap(),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () {},
+            style:
+                OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  side: BorderSide(
+                    color: isSelected ? AppColors.primary : Colors.black26,
+                  ),
+                  foregroundColor: Colors.black,
+                  backgroundColor: isSelected
+                      ? AppColors.primary.withOpacity(0.08)
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                ).copyWith(
+                  animationDuration: const Duration(milliseconds: 0),
+                  splashFactory: NoSplash.splashFactory,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-              ),
-              const SizedBox(width: 8),
-              if (isSelected)
-                const Icon(Icons.check_circle, color: AppColors.primary)
-              else
-                const Icon(Icons.circle_outlined, color: Colors.black26),
-            ],
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    trigger,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (isSelected)
+                  const Icon(Icons.check_circle, color: AppColors.primary)
+                else
+                  const Icon(Icons.circle_outlined, color: Colors.black26),
+              ],
+            ),
           ),
         ),
       ),

@@ -28,10 +28,15 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
     setState(() => _saving = true);
     try {
       context.read<AppState>().addQuickAnswer('Name: $input');
-      await UserProfileApi.setName(input);
       await UserProfileApi.setOnboardingResponse('name', input);
       if (!mounted) return;
       Navigator.of(context).pushNamed('/onboarding-age');
+      // Save name in background
+      Future.microtask(() async {
+        try {
+          await UserProfileApi.setName(input);
+        } catch (_) {}
+      });
     } finally {
       if (mounted) setState(() => _saving = false);
     }

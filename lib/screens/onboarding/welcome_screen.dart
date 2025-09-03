@@ -119,7 +119,34 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     opacity: _buttonFadeAnimation,
                     child: Column(
                       children: [
-                        // Research badge
+                        // CTA Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: () {
+                              Navigator.of(
+                                context,
+                              ).pushNamed('/onboarding-name');
+                            },
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Get Started',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Research badge (moved below CTA)
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -147,33 +174,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                     ),
                               ),
                             ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 48),
-
-                        // CTA Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: () {
-                              Navigator.of(
-                                context,
-                              ).pushNamed('/onboarding-name');
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Get Started',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                           ),
                         ),
 

@@ -5,6 +5,7 @@ import 'supabase/supabase_client.dart';
 import 'config/revenuecat_config.dart';
 import 'services/revenuecat.dart';
 import 'services/notification_manager.dart';
+import 'services/tiktok_events.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,8 @@ Future<void> main() async {
 
   // Initialize notification system
   await NotificationManager.initialize();
+  // Initialize TikTok SDK (safe no-op on Android until implemented)
+  await TtEvents.init();
 
   runApp(const AppRoot());
 }

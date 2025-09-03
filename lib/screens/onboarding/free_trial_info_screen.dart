@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:lottie/lottie.dart';
 import '../../theme/app_colors.dart';
+import '../../services/tiktok_events.dart';
 
 class FreeTrialInfoScreen extends StatefulWidget {
   const FreeTrialInfoScreen({super.key});
@@ -43,7 +44,10 @@ class _FreeTrialInfoScreenState extends State<FreeTrialInfoScreen>
 
   Future<void> _goToPaywall() async {
     try {
-      await RevenueCatUI.presentPaywall();
+      // Fire trial start immediately so it appears in Test Events even if paywall stays open
+      await TtEvents.trackTrialStart();
+      // Show paywall (don't await)
+      RevenueCatUI.presentPaywall();
     } catch (_) {}
   }
 
